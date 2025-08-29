@@ -28,6 +28,11 @@ function formatTimestamp() {
   return `[${timeStr}]`
 }
 
+// Utility function for consistent price formatting (always 2 decimal places)
+function formatPrice(price) {
+  return price.toFixed(2)
+}
+
 function nowPT(){
   const d = new Date()
   try {
@@ -265,7 +270,7 @@ export default function App(){
                 setPrice(p)
                 // Log price updates less frequently to avoid spam
                 if (messageCountRef.current % 100 === 0) {
-                  log(`Price update: $${p.toLocaleString()}`, 'info')
+                  log(`Price update: $${formatPrice(p)}`, 'info')
                 }
                 return
               }
@@ -383,7 +388,7 @@ export default function App(){
     <div className="wrap">
       <div className="hero">
         <div className="center">
-          <div className="val">{price != null ? `$${price.toLocaleString()}` : '—'}</div>
+          <div className="val">{price != null ? `$${formatPrice(price)}` : '—'}</div>
           <div className="label">BTC/USD (Kraken)</div>
         </div>
         <div className="row">
