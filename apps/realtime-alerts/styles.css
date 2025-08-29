@@ -6,8 +6,8 @@ body { margin: 0; font-family: 'Noto Sans Mono', monospace; }
 .card { border: 1px solid #e5e7eb33; border-radius: 12px; padding: 12px 14px; box-shadow: 0 1px 8px #0000000a; }
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .label { opacity: .7; font-size: 12px; }
-.label.hero-label { font-family: 'Creepster', cursive; font-size: 14px; opacity: 0.8; }
-.val { font-size: 28px; font-weight: 600; font-family: 'Creepster', cursive; }
+.label.hero-label { font-family: "Creepster", system-ui; font-size: 14px; opacity: 0.8; }
+.val { font-size: 28px; font-weight: 600; font-family: "Creepster", system-ui; }
 .small { font-size: 12px; opacity: .8; font-weight: 400; }
 .row { display: flex; gap: 10px; align-items: baseline; }
 .logs { max-height: 260px; overflow: auto; font-family: 'Noto Sans Mono', monospace; font-size: 12px; white-space: pre-wrap; }
