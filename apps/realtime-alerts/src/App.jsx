@@ -13,7 +13,20 @@ const MAX_RECONNECT_ATTEMPTS = 10   // max consecutive reconnection attempts
 const CONNECTION_TIMEOUT = 10000    // connection timeout in ms
 
 // Visible logs cap to keep things light
-const LOG_MAX = 500
+const LOG_MAX = 200
+
+// Utility function for consistent timestamp formatting
+function formatTimestamp() {
+  const now = new Date()
+  const timeStr = now.toLocaleTimeString('en-US', { 
+    hour12: false, 
+    hour: '2-digit', 
+    minute: '2-digit', 
+    second: '2-digit',
+    fractionalSecondDigits: 3
+  })
+  return `[${timeStr}]`
+}
 
 function nowPT(){
   const d = new Date()
@@ -50,8 +63,10 @@ export default function App(){
   const messageCountRef = useRef(0)
   const errorCountRef = useRef(0)
 
-  function log(s){
-    setLogs(l => [ `[${new Date().toLocaleTimeString()}] ${s}`, ...(l||[]) ].slice(0, LOG_MAX))
+  function log(s, level = 'info'){
+    const timestamp = formatTimestamp()
+    const levelPrefix = level === 'error' ? '❌' : level === 'warn' ? '⚠️' : level === 'success' ? '✅' : 'ℹ️'
+    setLogs(l => [ `${timestamp} ${levelPrefix} ${s}`, ...(l||[]) ].slice(0, LOG_MAX))
   }
 
   function bump(){
@@ -83,6 +98,11 @@ export default function App(){
     else if (pingLatency > 0) quality = 'poor'
     
     setConnectionQuality(quality)
+    
+    // Log quality changes
+    if (pingLatency > 0) {
+      log(`Connection quality: ${quality} (ping: ${pingLatency}ms)`, 'info')
+    }
   }, [])
 
   // Update lastActivityAgo periodically for UI display
@@ -98,16 +118,17 @@ export default function App(){
     
     // Check if we've exceeded max attempts
     if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-      log(`Max reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Manual intervention required.`)
+      log(`Max reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Manual intervention required.`, 'error')
       setStatus('failed')
       return
     }
     
     const jitter = Math.random() * 250
     const delay = Math.min(BACKOFF_MAX, Math.max(BACKOFF_MIN, backoffRef.current)) + jitter
-    log(`Reconnecting in ${(delay/1000).toFixed(1)}s… (attempt ${reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS})`)
+    log(`Scheduling reconnection in ${(delay/1000).toFixed(1)}s (attempt ${reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS})`, 'warn')
     
     reconnectToRef.current = setTimeout(() => {
+      log(`Executing reconnection attempt ${reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS}`, 'info')
       setReconnectAttempts(prev => prev + 1)
       connect()
     }, delay)
@@ -121,10 +142,12 @@ export default function App(){
     setStatus('connecting')
     unsubscribedRef.current = false
     
+    log(`Initiating connection to ${KRAKEN_WS}`, 'info')
+    
     // Set connection timeout
     connectionTimeoutRef.current = setTimeout(() => {
       if (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING) {
-        log('Connection timeout - closing and retrying')
+        log('Connection timeout - closing and retrying', 'warn')
         safeClose(4000, 'timeout')
         scheduleReconnect()
       }
@@ -140,11 +163,12 @@ export default function App(){
         setStatus('open')
         setReconnectAttempts(0) // Reset on successful connection
         bump()
-        log(`Connected to Kraken WS for ${PAIR}`)
+        log(`WebSocket connection established successfully`, 'success')
+        log(`Subscribing to ${PAIR} ticker feed`, 'info')
         
         // subscribe
         ws.send(JSON.stringify(SUB))
-        log(`WS → subscribe ${PAIR}`)
+        log(`WS → subscribe ${PAIR}`, 'info')
 
         // ping loop with latency tracking
         pingIvRef.current = setInterval(() => {
@@ -152,6 +176,7 @@ export default function App(){
           try {
             lastPingTimeRef.current = Date.now()
             wsRef.current.send(JSON.stringify({ event: 'ping' }))
+            log(`WS → ping sent`, 'info')
           } catch {}
         }, PING_MS)
 
@@ -162,7 +187,7 @@ export default function App(){
           // Check for stale connection
           const last = lastActivityRef.current || 0
           if (Date.now() - last > STALE_MS) {
-            log('No WS activity in 40s — closing to recover')
+            log('No WebSocket activity in 40s — closing to recover', 'warn')
             backoffRef.current = Math.max(BACKOFF_MIN, backoffRef.current) // keep backoff
             safeClose(4000, 'stale')
           }
@@ -174,6 +199,7 @@ export default function App(){
         try { msg = JSON.parse(ev.data) } catch { 
           errorCountRef.current++
           setErrorCount(errorCountRef.current)
+          log(`Failed to parse WebSocket message: ${ev.data}`, 'error')
           return 
         }
         
@@ -187,11 +213,16 @@ export default function App(){
         }
 
         // Heartbeat keeps us alive
-        if (msg?.event === 'heartbeat') return
+        if (msg?.event === 'heartbeat') {
+          log(`WS ← heartbeat received`, 'info')
+          return
+        }
 
         // Pong response to ping
         if (msg?.event === 'pong') {
           lastPongTimeRef.current = Date.now()
+          const latency = lastPongTimeRef.current - lastPingTimeRef.current
+          log(`WS ← pong received (latency: ${latency}ms)`, 'info')
           // Update quality immediately after pong
           updateConnectionQuality()
           return
@@ -199,9 +230,9 @@ export default function App(){
 
         // System / subscription status
         if (msg?.event === 'systemStatus') {
-          log(`WS ← systemStatus: ${msg.status || 'unknown'}`)
+          log(`WS ← systemStatus: ${msg.status || 'unknown'}`, 'info')
           if (msg.status === 'maintenance') {
-            log('Kraken system in maintenance mode - will retry later')
+            log('Kraken system in maintenance mode - will retry later', 'warn')
             backoffRef.current = Math.max(backoffRef.current * 2, 30000) // longer backoff for maintenance
           }
           return
@@ -211,10 +242,10 @@ export default function App(){
           const st = msg.status
           if (st === 'subscribed') {
             channelIdRef.current = msg.channelID
-            log(`WS ← subscriptionStatus: subscribed (channel: ${msg.channelID})`)
+            log(`WS ← subscriptionStatus: subscribed (channel: ${msg.channelID})`, 'success')
             backoffRef.current = BACKOFF_MIN // reset backoff on success
           } else if (st === 'error') {
-            log(`WS ← subscriptionStatus: error: ${msg.errorMessage || 'unknown error'}`)
+            log(`WS ← subscriptionStatus: error: ${msg.errorMessage || 'unknown error'}`, 'error')
             errorCountRef.current++
             setErrorCount(errorCountRef.current)
             backoffRef.current = Math.max(backoffRef.current * 1.5, BACKOFF_MIN + 1000)
@@ -232,6 +263,10 @@ export default function App(){
               const p = Number(lastStr)
               if (!Number.isNaN(p)) {
                 setPrice(p)
+                // Log price updates less frequently to avoid spam
+                if (messageCountRef.current % 100 === 0) {
+                  log(`Price update: $${p.toLocaleString()}`, 'info')
+                }
                 return
               }
             }
@@ -247,30 +282,30 @@ export default function App(){
         setStatus('closed')
         
         // Log specific close codes with helpful messages
-        let closeMessage = `WS closed (code=${code}`
+        let closeMessage = `WebSocket closed (code=${code}`
         if (reason) closeMessage += `, reason="${reason}"`
         closeMessage += ')'
         
         if (code === 1000) {
-          log('WS closed cleanly')
+          log('WebSocket closed cleanly', 'info')
         } else if (code === 1001) {
-          log('WS closed: endpoint going away')
+          log('WebSocket closed: endpoint going away', 'warn')
         } else if (code === 1002) {
-          log('WS closed: protocol error')
+          log('WebSocket closed: protocol error', 'error')
         } else if (code === 1003) {
-          log('WS closed: unsupported data type')
+          log('WebSocket closed: unsupported data type', 'error')
         } else if (code === 1006) {
-          log('WS closed: abnormal closure (network issue)')
+          log('WebSocket closed: abnormal closure (network issue)', 'warn')
         } else if (code === 1011) {
-          log('WS closed: server error')
+          log('WebSocket closed: server error', 'error')
         } else if (code === 1012) {
-          log('WS closed: service restart')
+          log('WebSocket closed: service restart', 'warn')
         } else if (code === 1013) {
-          log('WS closed: try again later')
+          log('WebSocket closed: try again later', 'warn')
         } else if (code === 1015) {
-          log('WS closed: TLS handshake failure')
+          log('WebSocket closed: TLS handshake failure', 'error')
         } else {
-          log(closeMessage)
+          log(closeMessage, 'warn')
         }
         
         if (!unsubscribedRef.current) {
@@ -281,7 +316,7 @@ export default function App(){
       ws.onerror = (error) => {
         errorCountRef.current++
         setErrorCount(errorCountRef.current)
-        log(`WS error: ${error?.message || 'unknown error'}`)
+        log(`WebSocket error: ${error?.message || 'unknown error'}`, 'error')
         // errors also cause close with some agents; rely on onclose to reconnect
       }
 
@@ -289,12 +324,13 @@ export default function App(){
       clearTimeout(connectionTimeoutRef.current)
       setConnecting(false)
       setStatus('error')
-      log(`WS init error: ${err?.message || err}`)
+      log(`WebSocket initialization error: ${err?.message || err}`, 'error')
       scheduleReconnect()
     }
   }
 
   function disconnect(){
+    log('Manual disconnect requested', 'info')
     unsubscribedRef.current = true
     safeClose(1000, 'manual')
     clearTimers()
@@ -310,6 +346,7 @@ export default function App(){
       if (document.visibilityState === 'visible') {
         // if no WS, try reconnect quickly with a small backoff reset
         if (!wsRef.current) {
+          log('Page became visible, attempting reconnection', 'info')
           backoffRef.current = BACKOFF_MIN
           setReconnectAttempts(0)
           scheduleReconnect()
@@ -322,9 +359,10 @@ export default function App(){
 
   // Boot once
   useEffect(() => {
-    log('Booting Kraken realtime alerts...')
+    log('Booting Kraken realtime alerts application...', 'info')
     connect()
     return () => {
+      log('Application shutting down, cleaning up...', 'info')
       clearTimers()
       safeClose(1000, 'unmount')
     }
@@ -383,7 +421,7 @@ export default function App(){
       </div>
 
       <div className="card" style={{marginTop:12}}>
-        <div className="label" style={{marginBottom:6}}>Logs</div>
+        <div className="label" style={{marginBottom:6}}>Connection Logs</div>
         <div className="logs">
           {(logs||[]).map((line,i) => <div key={i}>{line}</div>)}
         </div>

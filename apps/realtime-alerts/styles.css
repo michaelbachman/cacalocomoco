@@ -10,6 +10,8 @@ body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter
 .small { font-size: 12px; opacity: .8; }
 .row { display: flex; gap: 10px; align-items: baseline; }
 .logs { max-height: 260px; overflow: auto; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; white-space: pre-wrap; }
+.logs div { padding: 2px 0; border-bottom: 1px solid #e5e7eb11; }
+.logs div:last-child { border-bottom: none; }
 .badge { padding: 2px 8px; border-radius: 999px; border: 1px solid #9993; font-size: 12px; }
 .ok { background: #10b98122; border-color: #10b98155; }
 .warn { background: #f59e0b22; border-color: #f59e0b55; }
