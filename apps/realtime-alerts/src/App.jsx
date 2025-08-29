@@ -389,7 +389,7 @@ export default function App(){
       <div className="hero">
         <div className="center">
           <div className="val">{price != null ? `$${formatPrice(price)}` : '—'}</div>
-          <div className="label">BTC/USD (Kraken)</div>
+          <div className="label hero-label">BTC/USD (Kraken)</div>
         </div>
         <div className="row">
           {statusBadge}
