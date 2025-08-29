@@ -64,7 +64,7 @@ button[disabled] { opacity: .5; cursor: not-allowed; }
 
 .pnl-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 16px;
   margin-bottom: 20px;
 }
@@ -123,6 +123,17 @@ button[disabled] { opacity: .5; cursor: not-allowed; }
 
 .pnl-value.current-price {
   color: #f9fafb;
+}
+
+.pnl-value.purchase-amount {
+  color: #8b5cf6;
+}
+
+.pnl-subtext {
+  font-size: 10px;
+  opacity: 0.6;
+  color: #9ca3af;
+  font-style: italic;
 }
 
 .pnl-percentage {
@@ -215,8 +226,8 @@ button[disabled] { opacity: .5; cursor: not-allowed; }
 /* Responsive design for smaller screens */
 @media (max-width: 768px) {
   .pnl-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
   }
   
   .pnl-column {
@@ -224,5 +235,12 @@ button[disabled] { opacity: .5; cursor: not-allowed; }
     background: #111827;
     border-radius: 8px;
     border: 1px solid #374151;
+  }
+}
+
+@media (max-width: 480px) {
+  .pnl-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
   }
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 
 export default function ProfitLossTracker({ currentBtcPrice }) {
   const [purchasePrice, setPurchasePrice] = useState('')
+  const [purchaseAmount, setPurchaseAmount] = useState('')
   const [profitLoss, setProfitLoss] = useState(0)
   const [status, setStatus] = useState('hold')
   const [sellThreshold, setSellThreshold] = useState(false)
@@ -25,6 +26,20 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
           setStatus('hold')
           setSellThreshold(false)
         }
+      }
+    }
+  }, [purchasePrice, currentBtcPrice])
+
+  // Calculate purchase amount in dollars when purchase price changes
+  useEffect(() => {
+    if (purchasePrice && currentBtcPrice) {
+      const purchase = parseFloat(purchasePrice)
+      const current = parseFloat(currentBtcPrice)
+      
+      if (!isNaN(purchase) && !isNaN(current)) {
+        // Calculate how much 1 BTC would cost at purchase price
+        const amount = purchase
+        setPurchaseAmount(amount)
       }
     }
   }, [purchasePrice, currentBtcPrice])
@@ -70,7 +85,16 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
           </div>
         </div>
 
-        {/* Column 2: Current Live BTC Price */}
+        {/* Column 2: Purchase Amount (1 BTC Value) */}
+        <div className="pnl-column">
+          <div className="pnl-label">Purchase Amount</div>
+          <div className="pnl-value purchase-amount">
+            {purchaseAmount ? formatCurrency(purchaseAmount) : '—'}
+          </div>
+          <div className="pnl-subtext">1 BTC Value</div>
+        </div>
+
+        {/* Column 3: Current Live BTC Price */}
         <div className="pnl-column">
           <div className="pnl-label">Current BTC Price</div>
           <div className="pnl-value current-price">
@@ -78,7 +102,7 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
           </div>
         </div>
 
-        {/* Column 3: Real-time Profit/Loss */}
+        {/* Column 4: Real-time Profit/Loss */}
         <div className="pnl-column">
           <div className="pnl-label">Profit/Loss</div>
           <div className={`pnl-value ${profitLoss >= 0 ? 'profit' : 'loss'}`}>
@@ -91,7 +115,7 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
           )}
         </div>
 
-        {/* Column 4: Status */}
+        {/* Column 5: Status */}
         <div className="pnl-column">
           <div className="pnl-label">Status</div>
           <div className={`pnl-status ${status}`}>
@@ -99,7 +123,7 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
           </div>
         </div>
 
-        {/* Column 5: Sell Threshold Indicator */}
+        {/* Column 6: Sell Threshold Indicator */}
         <div className="pnl-column">
           <div className="pnl-label">Sell Threshold</div>
           <div className={`pnl-threshold ${sellThreshold ? 'met' : 'not-met'}`}>
