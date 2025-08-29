@@ -88,7 +88,7 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
   return (
     <div className="pnl-tracker">
       <div className="pnl-header">
-        <h3>Profit/Loss Tracker</h3>
+        <h3>Profit/Loss Tracker (DRIFT)</h3>
         <div className="pnl-subtitle">BTC Transaction Monitor</div>
       </div>
       
@@ -157,6 +157,11 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
             {valueAfterSell > 0 ? formatCurrency(valueAfterSell) : '—'}
           </div>
           <div className="pnl-subtext">After 0.40% fees</div>
+          {currentValue > 0 && (
+            <div className="pnl-fees">
+              Fees: {formatCurrency(currentValue * SELLER_FEE_RATE)}
+            </div>
+          )}
         </div>
 
         {/* Column 6: Real-time Profit/Loss */}
