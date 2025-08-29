@@ -2,19 +2,19 @@ import React, { useState, useEffect } from 'react'
 
 export default function ProfitLossTracker({ currentBtcPrice }) {
   const [purchasePrice, setPurchasePrice] = useState('')
-  const [purchaseAmount, setPurchaseAmount] = useState('')
+  const [actualPurchasePrice, setActualPurchasePrice] = useState('')
   const [profitLoss, setProfitLoss] = useState(0)
   const [status, setStatus] = useState('hold')
   const [sellThreshold, setSellThreshold] = useState(false)
 
-  // Calculate profit/loss whenever purchase price or current price changes
+  // Calculate profit/loss whenever actual purchase price or current price changes
   useEffect(() => {
-    if (purchasePrice && currentBtcPrice) {
-      const purchase = parseFloat(purchasePrice)
+    if (actualPurchasePrice && currentBtcPrice) {
+      const actualPurchase = parseFloat(actualPurchasePrice)
       const current = parseFloat(currentBtcPrice)
       
-      if (!isNaN(purchase) && !isNaN(current)) {
-        const pl = current - purchase
+      if (!isNaN(actualPurchase) && !isNaN(current)) {
+        const pl = current - actualPurchase
         setProfitLoss(pl)
         
         // Update status based on profit/loss
@@ -28,21 +28,14 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
         }
       }
     }
-  }, [purchasePrice, currentBtcPrice])
+  }, [actualPurchasePrice, currentBtcPrice])
 
-  // Calculate purchase amount in dollars when purchase price changes
+  // Update purchase price to match current BTC price when it changes
   useEffect(() => {
-    if (purchasePrice && currentBtcPrice) {
-      const purchase = parseFloat(purchasePrice)
-      const current = parseFloat(currentBtcPrice)
-      
-      if (!isNaN(purchase) && !isNaN(current)) {
-        // Calculate how much 1 BTC would cost at purchase price
-        const amount = purchase
-        setPurchaseAmount(amount)
-      }
+    if (currentBtcPrice) {
+      setPurchasePrice(currentBtcPrice.toString())
     }
-  }, [purchasePrice, currentBtcPrice])
+  }, [currentBtcPrice])
 
   // Format currency with thousands separators
   const formatCurrency = (amount) => {
@@ -69,29 +62,30 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
       </div>
       
       <div className="pnl-grid">
-        {/* Column 1: Purchase Price Input */}
+        {/* Column 1: 1 BTC Spot Price (from Kraken) */}
         <div className="pnl-column">
-          <div className="pnl-label">Purchase Price</div>
+          <div className="pnl-label">1 BTC Spot Price</div>
+          <div className="pnl-value spot-price">
+            {currentBtcPrice ? formatCurrency(currentBtcPrice) : '—'}
+          </div>
+          <div className="pnl-subtext">Live from Kraken</div>
+        </div>
+
+        {/* Column 2: Actual Purchase Price Input */}
+        <div className="pnl-column">
+          <div className="pnl-label">Actual Purchase Price</div>
           <div className="pnl-input-wrapper">
             <input
               type="number"
               step="0.01"
               min="0"
               placeholder="0.00"
-              value={purchasePrice}
-              onChange={(e) => setPurchasePrice(e.target.value)}
+              value={actualPurchasePrice}
+              onChange={(e) => setActualPurchasePrice(e.target.value)}
               className="pnl-input"
             />
           </div>
-        </div>
-
-        {/* Column 2: Purchase Amount (1 BTC Value) */}
-        <div className="pnl-column">
-          <div className="pnl-label">Purchase Amount</div>
-          <div className="pnl-value purchase-amount">
-            {purchaseAmount ? formatCurrency(purchaseAmount) : '—'}
-          </div>
-          <div className="pnl-subtext">1 BTC Value</div>
+          <div className="pnl-subtext">What you paid</div>
         </div>
 
         {/* Column 3: Current Live BTC Price */}
@@ -106,11 +100,11 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
         <div className="pnl-column">
           <div className="pnl-label">Profit/Loss</div>
           <div className={`pnl-value ${profitLoss >= 0 ? 'profit' : 'loss'}`}>
-            {purchasePrice && currentBtcPrice ? formatCurrency(profitLoss) : '—'}
+            {actualPurchasePrice && currentBtcPrice ? formatCurrency(profitLoss) : '—'}
           </div>
-          {purchasePrice && currentBtcPrice && (
+          {actualPurchasePrice && currentBtcPrice && (
             <div className={`pnl-percentage ${profitLoss >= 0 ? 'profit' : 'loss'}`}>
-              {formatPercentage(profitLoss, parseFloat(purchasePrice))}
+              {formatPercentage(profitLoss, parseFloat(actualPurchasePrice))}
             </div>
           )}
         </div>
@@ -136,13 +130,18 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
       </div>
 
       {/* Summary Row */}
-      {purchasePrice && currentBtcPrice && (
+      {actualPurchasePrice && currentBtcPrice && (
         <div className="pnl-summary">
           <div className="summary-item">
             <span className="summary-label">Transaction Summary:</span>
             <span className={`summary-value ${profitLoss >= 0 ? 'profit' : 'loss'}`}>
-              {profitLoss >= 0 ? 'Profitable' : 'Loss'} • {formatCurrency(Math.abs(profitLoss))} • {formatPercentage(profitLoss, parseFloat(purchasePrice))}
+              {profitLoss >= 0 ? 'Profitable' : 'Loss'} • {formatCurrency(Math.abs(profitLoss))} • {formatPercentage(profitLoss, parseFloat(actualPurchasePrice))}
             </span>
+          </div>
+          <div className="summary-details">
+            <span className="detail-item">Spot Price: {formatCurrency(currentBtcPrice)}</span>
+            <span className="detail-item">You Paid: {formatCurrency(parseFloat(actualPurchasePrice))}</span>
+            <span className="detail-item">Difference: {formatCurrency(currentBtcPrice - parseFloat(actualPurchasePrice))}</span>
           </div>
         </div>
       )}
