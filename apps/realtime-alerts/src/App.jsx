@@ -9,6 +9,8 @@ const STALE_MS = 40000              // consider stale if no WS activity for 40s
 const PING_MS  = 15000              // send ping every 15s to keep intermediaries awake
 const BACKOFF_MIN = 2000            // 2s
 const BACKOFF_MAX = 60000           // 60s
+const MAX_RECONNECT_ATTEMPTS = 10   // max consecutive reconnection attempts
+const CONNECTION_TIMEOUT = 10000    // connection timeout in ms
 
 // Visible logs cap to keep things light
 const LOG_MAX = 500
@@ -29,6 +31,8 @@ export default function App(){
   const [logs, setLogs] = useState([])
   const [lastActivityAgo, setLastActivityAgo] = useState(0)
   const [connecting, setConnecting] = useState(false)
+  const [connectionQuality, setConnectionQuality] = useState('unknown')
+  const [reconnectAttempts, setReconnectAttempts] = useState(0)
 
   // refs (never trigger re-render)
   const wsRef = useRef(null)
@@ -39,6 +43,11 @@ export default function App(){
   const pingIvRef = useRef(null)
   const reconnectToRef = useRef(null)
   const unsubscribedRef = useRef(false)
+  const connectionTimeoutRef = useRef(null)
+  const lastPingTimeRef = useRef(0)
+  const lastPongTimeRef = useRef(0)
+  const messageCountRef = useRef(0)
+  const errorCountRef = useRef(0)
 
   function log(s){
     setLogs(l => [ `[${new Date().toLocaleTimeString()}] ${s}`, ...(l||[]) ].slice(0, LOG_MAX))
@@ -57,14 +66,42 @@ export default function App(){
     if (staleIvRef.current) { clearInterval(staleIvRef.current); staleIvRef.current = null }
     if (pingIvRef.current)  { clearInterval(pingIvRef.current);  pingIvRef.current  = null }
     if (reconnectToRef.current) { clearTimeout(reconnectToRef.current); reconnectToRef.current = null }
+    if (connectionTimeoutRef.current) { clearTimeout(connectionTimeoutRef.current); connectionTimeoutRef.current = null }
+  }
+
+  function updateConnectionQuality() {
+    const now = Date.now()
+    const pingLatency = lastPongTimeRef.current - lastPingTimeRef.current
+    const messageRate = messageCountRef.current / Math.max(1, (now - lastActivityRef.current) / 1000)
+    
+    let quality = 'unknown'
+    if (pingLatency > 0 && pingLatency < 100) quality = 'excellent'
+    else if (pingLatency < 300) quality = 'good'
+    else if (pingLatency < 1000) quality = 'fair'
+    else if (pingLatency > 0) quality = 'poor'
+    
+    setConnectionQuality(quality)
   }
 
   function scheduleReconnect(){
     clearTimers()
+    
+    // Check if we've exceeded max attempts
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      log(`Max reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Manual intervention required.`)
+      setStatus('failed')
+      return
+    }
+    
     const jitter = Math.random() * 250
     const delay = Math.min(BACKOFF_MAX, Math.max(BACKOFF_MIN, backoffRef.current)) + jitter
-    log(`Reconnecting in ${(delay/1000).toFixed(1)}s…`)
-    reconnectToRef.current = setTimeout(connect, delay)
+    log(`Reconnecting in ${(delay/1000).toFixed(1)}s… (attempt ${reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS})`)
+    
+    reconnectToRef.current = setTimeout(() => {
+      setReconnectAttempts(prev => prev + 1)
+      connect()
+    }, delay)
+    
     backoffRef.current = Math.min(BACKOFF_MAX, backoffRef.current * 1.7 + 200)
   }
 
@@ -73,23 +110,37 @@ export default function App(){
     setConnecting(true)
     setStatus('connecting')
     unsubscribedRef.current = false
+    
+    // Set connection timeout
+    connectionTimeoutRef.current = setTimeout(() => {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING) {
+        log('Connection timeout - closing and retrying')
+        safeClose(4000, 'timeout')
+        scheduleReconnect()
+      }
+    }, CONNECTION_TIMEOUT)
+    
     try {
       const ws = new WebSocket(KRAKEN_WS)
       wsRef.current = ws
 
       ws.onopen = () => {
+        clearTimeout(connectionTimeoutRef.current)
         setConnecting(false)
         setStatus('open')
+        setReconnectAttempts(0) // Reset on successful connection
         bump()
-        log(`Connecting WS for ${PAIR}…`)
+        log(`Connected to Kraken WS for ${PAIR}`)
+        
         // subscribe
         ws.send(JSON.stringify(SUB))
         log(`WS → subscribe ${PAIR}`)
 
-        // ping loop
+        // ping loop with latency tracking
         pingIvRef.current = setInterval(() => {
           if (!wsRef.current) return
           try {
+            lastPingTimeRef.current = Date.now()
             wsRef.current.send(JSON.stringify({ event: 'ping' }))
           } catch {}
         }, PING_MS)
@@ -108,26 +159,48 @@ export default function App(){
 
       ws.onmessage = (ev) => {
         let msg
-        try { msg = JSON.parse(ev.data) } catch { return }
+        try { msg = JSON.parse(ev.data) } catch { 
+          errorCountRef.current++
+          return 
+        }
+        
         // Any parsed message counts as activity
         bump()
+        messageCountRef.current++
+        
+        // Update connection quality periodically
+        if (messageCountRef.current % 10 === 0) {
+          updateConnectionQuality()
+        }
 
         // Heartbeat keeps us alive
         if (msg?.event === 'heartbeat') return
 
+        // Pong response to ping
+        if (msg?.event === 'pong') {
+          lastPongTimeRef.current = Date.now()
+          return
+        }
+
         // System / subscription status
         if (msg?.event === 'systemStatus') {
           log(`WS ← systemStatus: ${msg.status || 'unknown'}`)
+          if (msg.status === 'maintenance') {
+            log('Kraken system in maintenance mode - will retry later')
+            backoffRef.current = Math.max(backoffRef.current * 2, 30000) // longer backoff for maintenance
+          }
           return
         }
+        
         if (msg?.event === 'subscriptionStatus') {
           const st = msg.status
           if (st === 'subscribed') {
             channelIdRef.current = msg.channelID
-            log(`WS ← subscriptionStatus: subscribed`)
+            log(`WS ← subscriptionStatus: subscribed (channel: ${msg.channelID})`)
             backoffRef.current = BACKOFF_MIN // reset backoff on success
           } else if (st === 'error') {
-            log(`WS ← subscriptionStatus: error`)
+            log(`WS ← subscriptionStatus: error: ${msg.errorMessage || 'unknown error'}`)
+            errorCountRef.current++
             backoffRef.current = Math.max(backoffRef.current * 1.5, BACKOFF_MIN + 1000)
             scheduleReconnect()
           }
@@ -156,20 +229,47 @@ export default function App(){
         const code = ev?.code || 1005
         const reason = ev?.reason || ''
         setStatus('closed')
-        if (!unsubscribedRef.current) {
-          log(`WS closed (code=${code}${reason?`, reason="${reason}"`:''})`)
-          scheduleReconnect()
+        
+        // Log specific close codes with helpful messages
+        let closeMessage = `WS closed (code=${code}`
+        if (reason) closeMessage += `, reason="${reason}"`
+        closeMessage += ')'
+        
+        if (code === 1000) {
+          log('WS closed cleanly')
+        } else if (code === 1001) {
+          log('WS closed: endpoint going away')
+        } else if (code === 1002) {
+          log('WS closed: protocol error')
+        } else if (code === 1003) {
+          log('WS closed: unsupported data type')
+        } else if (code === 1006) {
+          log('WS closed: abnormal closure (network issue)')
+        } else if (code === 1011) {
+          log('WS closed: server error')
+        } else if (code === 1012) {
+          log('WS closed: service restart')
+        } else if (code === 1013) {
+          log('WS closed: try again later')
+        } else if (code === 1015) {
+          log('WS closed: TLS handshake failure')
         } else {
-          log(`WS closed (clean)`)
+          log(closeMessage)
+        }
+        
+        if (!unsubscribedRef.current) {
+          scheduleReconnect()
         }
       }
 
-      ws.onerror = () => {
+      ws.onerror = (error) => {
+        errorCountRef.current++
+        log(`WS error: ${error?.message || 'unknown error'}`)
         // errors also cause close with some agents; rely on onclose to reconnect
-        log('WS error')
       }
 
     } catch (err) {
+      clearTimeout(connectionTimeoutRef.current)
       setConnecting(false)
       setStatus('error')
       log(`WS init error: ${err?.message || err}`)
@@ -178,10 +278,11 @@ export default function App(){
   }
 
   function disconnect(){
-    unsubscribedRef.current = True
+    unsubscribedRef.current = true
     safeClose(1000, 'manual')
     clearTimers()
     setStatus('disconnected')
+    setReconnectAttempts(0)
   }
 
   // Visibility handling: on resume, if closed, reconnect
@@ -191,6 +292,7 @@ export default function App(){
         // if no WS, try reconnect quickly with a small backoff reset
         if (!wsRef.current) {
           backoffRef.current = BACKOFF_MIN
+          setReconnectAttempts(0)
           scheduleReconnect()
         }
       }
@@ -201,7 +303,7 @@ export default function App(){
 
   // Boot once
   useEffect(() => {
-    log('Booting…')
+    log('Booting Kraken realtime alerts...')
     connect()
     return () => {
       clearTimers()
@@ -211,7 +313,10 @@ export default function App(){
 
   // Derived UI bits
   const statusBadge = useMemo(() => {
-    const cls = status === 'open' ? 'badge ok' : (status === 'connecting' ? 'badge warn' : 'badge')
+    let cls = 'badge'
+    if (status === 'open') cls = 'badge ok'
+    else if (status === 'connecting') cls = 'badge warn'
+    else if (status === 'failed') cls = 'badge error'
     return <span className={cls}>{status}</span>
   }, [status])
 
@@ -226,7 +331,11 @@ export default function App(){
         </div>
         <div className="row">
           {statusBadge}
-          <button onClick={() => { backoffRef.current = BACKOFF_MIN; connect(); }} disabled={connecting || status === 'open'}>
+          <button onClick={() => { 
+            backoffRef.current = BACKOFF_MIN; 
+            setReconnectAttempts(0);
+            connect(); 
+          }} disabled={connecting || status === 'open'}>
             Reconnect
           </button>
         </div>
@@ -236,12 +345,18 @@ export default function App(){
         <div className="card">
           <div className="label">Connection</div>
           <div className="small">
-            Pair: {PAIR} • Last activity: {lastActivitySec}s ago • Backoff: {(backoffRef.current/1000).toFixed(1)}s
+            Pair: {PAIR} • Quality: {connectionQuality} • Last activity: {lastActivitySec}s ago
+          </div>
+          <div className="small">
+            Backoff: {(backoffRef.current/1000).toFixed(1)}s • Attempts: {reconnectAttempts}/{MAX_RECONNECT_ATTEMPTS}
           </div>
         </div>
         <div className="card">
           <div className="label">Notes</div>
-          <div className="small">Resets stale on heartbeat / status / ticker. Exponential backoff with jitter. Single WS and subscription.</div>
+          <div className="small">
+            Enhanced connection monitoring with quality metrics. Exponential backoff with max attempts limit. 
+            Automatic recovery from network issues and Kraken maintenance.
+          </div>
         </div>
       </div>
 

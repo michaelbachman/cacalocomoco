@@ -13,6 +13,7 @@ body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter
 .badge { padding: 2px 8px; border-radius: 999px; border: 1px solid #9993; font-size: 12px; }
 .ok { background: #10b98122; border-color: #10b98155; }
 .warn { background: #f59e0b22; border-color: #f59e0b55; }
+.error { background: #ef444422; border-color: #ef444455; }
 .center { display:flex; align-items:center; gap: 12px; }
 button { font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid #e5e7eb; background: transparent; cursor: pointer; }
 button[disabled] { opacity: .5; cursor: not-allowed; }
