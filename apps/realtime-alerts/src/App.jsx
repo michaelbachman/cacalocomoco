@@ -32,9 +32,12 @@ function formatTimestamp() {
   return `[${timeStr}]`
 }
 
-// Utility function for consistent price formatting (always 2 decimal places)
+// Utility function for consistent price formatting (always 2 decimal places + thousands separators)
 function formatPrice(price) {
-  return price.toFixed(2)
+  return price.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
 }
 
 function nowPT(){
