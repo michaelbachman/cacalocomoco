@@ -120,14 +120,20 @@ export default function App(){
     const ago = now - lastActivityRef.current
     setLastActivityAgo(ago)
     
-    // Check for stale connection
-    if (ago > STALE_MS) {
+    // Check for stale connection - only if not already reconnecting and WebSocket is open
+    if (ago > STALE_MS && !connecting && wsRef.current?.readyState === WebSocket.OPEN) {
       log(`Connection stale (${Math.round(ago/1000)}s), scheduling reconnect`, 'warn')
       scheduleReconnect()
     }
-  }, [])
+  }, [connecting])
 
   function scheduleReconnect(){
+    // Prevent multiple reconnection attempts
+    if (reconnectToRef.current) {
+      log('Reconnection already scheduled, skipping duplicate', 'info')
+      return
+    }
+    
     if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
       log(`Max reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached, stopping`, 'error')
       setStatus('failed')
@@ -136,6 +142,7 @@ export default function App(){
     
     log(`Scheduling reconnect attempt ${reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS} in ${(backoffRef.current/1000).toFixed(1)}s`, 'info')
     reconnectToRef.current = setTimeout(() => {
+      reconnectToRef.current = null // Clear the ref before attempting connection
       connect()
     }, backoffRef.current)
     
@@ -144,14 +151,23 @@ export default function App(){
   }
 
   function connect(){
+    // Check if WebSocket is already open and healthy
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      log('WebSocket already open', 'info')
+      log('WebSocket already open and healthy, skipping connection attempt', 'info')
       return
     }
     
+    // Check if already connecting
     if (connecting) {
-      log('Connection already in progress', 'info')
+      log('Connection already in progress, skipping duplicate', 'info')
       return
+    }
+    
+    // Check if we're already scheduled to reconnect
+    if (reconnectToRef.current) {
+      log('Reconnection already scheduled, clearing and proceeding', 'info')
+      clearTimeout(reconnectToRef.current)
+      reconnectToRef.current = null
     }
     
     setConnecting(true)
