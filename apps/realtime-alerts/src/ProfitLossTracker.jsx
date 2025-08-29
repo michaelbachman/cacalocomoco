@@ -11,8 +11,8 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
   const [status, setStatus] = useState('hold')
   const [sellThreshold, setSellThreshold] = useState(false)
 
-  // Seller fees: 0.40%
-  const SELLER_FEE_RATE = 0.004
+  // Seller fees: 0.80%
+  const SELLER_FEE_RATE = 0.008
 
   // Calculate BTC amount and total cost when dollar amount or strike price changes
   useEffect(() => {
@@ -156,7 +156,7 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
           <div className="pnl-value after-sell">
             {valueAfterSell > 0 ? formatCurrency(valueAfterSell) : '—'}
           </div>
-          <div className="pnl-subtext">After 0.40% fees</div>
+          <div className="pnl-subtext">After 0.80% fees</div>
           {currentValue > 0 && (
             <div className="pnl-fees">
               Fees: {formatCurrency(currentValue * SELLER_FEE_RATE)}
