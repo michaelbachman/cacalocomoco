@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react'
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 
 // ---- Config ----
 const KRAKEN_WS = 'wss://ws.kraken.com'
@@ -33,6 +33,7 @@ export default function App(){
   const [connecting, setConnecting] = useState(false)
   const [connectionQuality, setConnectionQuality] = useState('unknown')
   const [reconnectAttempts, setReconnectAttempts] = useState(0)
+  const [errorCount, setErrorCount] = useState(0)
 
   // refs (never trigger re-render)
   const wsRef = useRef(null)
@@ -55,6 +56,8 @@ export default function App(){
 
   function bump(){
     lastActivityRef.current = Date.now()
+    // Update the state immediately for accurate display
+    setLastActivityAgo(0)
   }
 
   function safeClose(code=1000, reason=''){
@@ -69,10 +72,9 @@ export default function App(){
     if (connectionTimeoutRef.current) { clearTimeout(connectionTimeoutRef.current); connectionTimeoutRef.current = null }
   }
 
-  function updateConnectionQuality() {
-    const now = Date.now()
+  // Memoized connection quality calculation to prevent unnecessary recalculations
+  const updateConnectionQuality = useCallback(() => {
     const pingLatency = lastPongTimeRef.current - lastPingTimeRef.current
-    const messageRate = messageCountRef.current / Math.max(1, (now - lastActivityRef.current) / 1000)
     
     let quality = 'unknown'
     if (pingLatency > 0 && pingLatency < 100) quality = 'excellent'
@@ -81,7 +83,15 @@ export default function App(){
     else if (pingLatency > 0) quality = 'poor'
     
     setConnectionQuality(quality)
-  }
+  }, [])
+
+  // Update lastActivityAgo periodically for UI display
+  const updateActivityDisplay = useCallback(() => {
+    const last = lastActivityRef.current || 0
+    if (last > 0) {
+      setLastActivityAgo(Date.now() - last)
+    }
+  }, [])
 
   function scheduleReconnect(){
     clearTimers()
@@ -145,10 +155,12 @@ export default function App(){
           } catch {}
         }, PING_MS)
 
-        // stale watchdog
+        // Update activity display every second for UI
         staleIvRef.current = setInterval(() => {
+          updateActivityDisplay()
+          
+          // Check for stale connection
           const last = lastActivityRef.current || 0
-          setLastActivityAgo(Date.now() - last)
           if (Date.now() - last > STALE_MS) {
             log('No WS activity in 40s — closing to recover')
             backoffRef.current = Math.max(BACKOFF_MIN, backoffRef.current) // keep backoff
@@ -161,6 +173,7 @@ export default function App(){
         let msg
         try { msg = JSON.parse(ev.data) } catch { 
           errorCountRef.current++
+          setErrorCount(errorCountRef.current)
           return 
         }
         
@@ -168,8 +181,8 @@ export default function App(){
         bump()
         messageCountRef.current++
         
-        // Update connection quality periodically
-        if (messageCountRef.current % 10 === 0) {
+        // Update connection quality less frequently (every 20 messages)
+        if (messageCountRef.current % 20 === 0) {
           updateConnectionQuality()
         }
 
@@ -179,6 +192,8 @@ export default function App(){
         // Pong response to ping
         if (msg?.event === 'pong') {
           lastPongTimeRef.current = Date.now()
+          // Update quality immediately after pong
+          updateConnectionQuality()
           return
         }
 
@@ -201,6 +216,7 @@ export default function App(){
           } else if (st === 'error') {
             log(`WS ← subscriptionStatus: error: ${msg.errorMessage || 'unknown error'}`)
             errorCountRef.current++
+            setErrorCount(errorCountRef.current)
             backoffRef.current = Math.max(backoffRef.current * 1.5, BACKOFF_MIN + 1000)
             scheduleReconnect()
           }
@@ -264,6 +280,7 @@ export default function App(){
 
       ws.onerror = (error) => {
         errorCountRef.current++
+        setErrorCount(errorCountRef.current)
         log(`WS error: ${error?.message || 'unknown error'}`)
         // errors also cause close with some agents; rely on onclose to reconnect
       }
@@ -283,6 +300,8 @@ export default function App(){
     clearTimers()
     setStatus('disconnected')
     setReconnectAttempts(0)
+    setLastActivityAgo(0)
+    setConnectionQuality('unknown')
   }
 
   // Visibility handling: on resume, if closed, reconnect
@@ -349,6 +368,9 @@ export default function App(){
           </div>
           <div className="small">
             Backoff: {(backoffRef.current/1000).toFixed(1)}s • Attempts: {reconnectAttempts}/{MAX_RECONNECT_ATTEMPTS}
+          </div>
+          <div className="small">
+            Errors: {errorCount} • Messages: {messageCountRef.current}
           </div>
         </div>
         <div className="card">
