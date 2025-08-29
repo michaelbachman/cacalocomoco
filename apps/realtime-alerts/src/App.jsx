@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react'
+import ProfitLossTracker from './ProfitLossTracker'
 
 // ---- Config ----
 const KRAKEN_WS = 'wss://ws.kraken.com'
@@ -445,6 +446,9 @@ export default function App(){
           {(logs||[]).map((line,i) => <div key={i}>{line}</div>)}
         </div>
       </div>
+
+      {/* Profit/Loss Tracker Component - Can be easily removed */}
+      <ProfitLossTracker currentBtcPrice={prices['BTC/USD']} />
     </div>
   )
 }
