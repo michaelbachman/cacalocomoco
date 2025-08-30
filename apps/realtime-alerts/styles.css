@@ -333,3 +333,321 @@ button[disabled] { opacity: .5; cursor: not-allowed; }
     gap: 20px;
   }
 }
+
+/* Profitability Analysis Component Styles */
+.profitability-analysis {
+  background: var(--md-sys-color-surface-variant);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 16px;
+  padding: 24px;
+  margin-top: 16px;
+  box-shadow: 0 1px 3px 1px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.30);
+}
+
+.analysis-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.analysis-header h2 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  font-family: 'Noto Sans Mono', monospace;
+}
+
+.analysis-header p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: 'Noto Sans Mono', monospace;
+}
+
+.analysis-controls {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.analysis-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Noto Sans Mono', monospace;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 140px;
+}
+
+.analysis-btn.primary {
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+
+.analysis-btn.primary:hover {
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.analysis-btn.secondary {
+  background: var(--md-sys-color-secondary);
+  color: var(--md-sys-color-on-secondary);
+}
+
+.analysis-btn.secondary:hover {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.analysis-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.last-update {
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 12px;
+  background: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 8px;
+}
+
+.last-update p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: 'Noto Sans Mono', monospace;
+}
+
+/* Top Pairs Section */
+.top-pairs {
+  margin-bottom: 32px;
+}
+
+.top-pairs h3 {
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  font-family: 'Noto Sans Mono', monospace;
+  text-align: center;
+}
+
+.top-pairs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.top-pair-card {
+  background: var(--md-sys-color-surface);
+  border: 2px solid var(--md-sys-color-outline);
+  border-radius: 16px;
+  padding: 20px;
+  position: relative;
+  transition: all 0.3s;
+}
+
+.top-pair-card.rank-1 {
+  border-color: #ffd700;
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+}
+
+.top-pair-card.rank-2 {
+  border-color: #c0c0c0;
+  box-shadow: 0 4px 20px rgba(192, 192, 192, 0.3);
+}
+
+.rank-badge {
+  position: absolute;
+  top: -12px;
+  right: 20px;
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Noto Sans Mono', monospace;
+}
+
+.top-pair-card h4 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  font-family: 'Noto Sans Mono', monospace;
+  text-align: center;
+}
+
+.profit-metrics {
+  display: grid;
+  gap: 12px;
+}
+
+.metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--md-sys-color-outline);
+}
+
+.metric:last-child {
+  border-bottom: none;
+}
+
+.metric .label {
+  font-size: 12px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-weight: 500;
+  font-family: 'Noto Sans Mono', monospace;
+}
+
+.metric .value {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Noto Sans Mono', monospace;
+}
+
+.metric .value.positive {
+  color: #10b981;
+}
+
+.metric .value.negative {
+  color: #ef4444;
+}
+
+/* Analysis Table */
+.analysis-table-container {
+  margin-bottom: 32px;
+}
+
+.analysis-table-container h3 {
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  font-family: 'Noto Sans Mono', monospace;
+  text-align: center;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--md-sys-color-outline);
+}
+
+.analysis-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 12px;
+  background: var(--md-sys-color-surface);
+}
+
+.analysis-table th {
+  background: var(--md-sys-color-surface-variant);
+  padding: 16px 12px;
+  text-align: left;
+  color: var(--md-sys-color-on-surface);
+  font-weight: 600;
+  border-bottom: 2px solid var(--md-sys-color-outline);
+  white-space: nowrap;
+}
+
+.analysis-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--md-sys-color-outline);
+  color: var(--md-sys-color-on-surface);
+}
+
+.analysis-table tr:hover {
+  background: var(--md-sys-color-surface-variant);
+}
+
+.analysis-table tr.top-performer {
+  background: rgba(255, 215, 0, 0.1);
+}
+
+.analysis-table .rank {
+  font-weight: 600;
+  text-align: center;
+  color: var(--md-sys-color-primary);
+}
+
+.analysis-table .pair-name {
+  font-weight: 500;
+  min-width: 120px;
+}
+
+.analysis-table .change,
+.analysis-table .profit {
+  font-weight: 600;
+  text-align: right;
+}
+
+.analysis-table .change.positive,
+.analysis-table .profit.positive {
+  color: #10b981;
+}
+
+.analysis-table .change.negative,
+.analysis-table .profit.negative {
+  color: #ef4444;
+}
+
+.analysis-table .price,
+.analysis-table .value {
+  font-weight: 500;
+  text-align: right;
+}
+
+.analysis-table .volatility {
+  text-align: right;
+  font-weight: 500;
+}
+
+.analysis-table .volume {
+  text-align: right;
+  font-weight: 500;
+}
+
+/* Gemini Analysis Section */
+.gemini-analysis {
+  margin-top: 32px;
+}
+
+.gemini-analysis h3 {
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  font-family: 'Noto Sans Mono', monospace;
+  text-align: center;
+}
+
+.gemini-content {
+  background: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 12px;
+  padding: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.gemini-content pre {
+  margin: 0;
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--md-sys-color-on-surface);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}

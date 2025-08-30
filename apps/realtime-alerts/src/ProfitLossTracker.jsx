@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 
-export default function ProfitLossTracker({ currentBtcPrice }) {
+export default function ProfitLossTracker({ currentBtcPrice, currentBtcUsdcPrice }) {
   const [dollarAmount, setDollarAmount] = useState('')
   const [strikePrice, setStrikePrice] = useState('')
   const [btcAmount, setBtcAmount] = useState(0)
@@ -10,9 +10,13 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
   const [profitLoss, setProfitLoss] = useState(0)
   const [status, setStatus] = useState('hold')
   const [sellThreshold, setSellThreshold] = useState(false)
+  const [selectedPriceType, setSelectedPriceType] = useState('USD') // 'USD' or 'USDC'
 
   // Seller fees: 0.80%
   const SELLER_FEE_RATE = 0.008
+
+  // Get the current BTC price based on selection
+  const currentBtcPriceValue = selectedPriceType === 'USD' ? currentBtcPrice : currentBtcUsdcPrice
 
   // Calculate BTC amount and total cost when dollar amount or strike price changes
   useEffect(() => {
@@ -31,9 +35,9 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
 
   // Calculate current value when BTC amount or current price changes
   useEffect(() => {
-    if (btcAmount > 0 && currentBtcPrice) {
+    if (btcAmount > 0 && currentBtcPriceValue) {
       const amount = btcAmount
-      const current = parseFloat(currentBtcPrice)
+      const current = parseFloat(currentBtcPriceValue)
       
       if (!isNaN(amount) && !isNaN(current)) {
         const value = amount * current
@@ -45,7 +49,7 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
         setValueAfterSell(afterFees)
       }
     }
-  }, [btcAmount, currentBtcPrice])
+  }, [btcAmount, currentBtcPriceValue])
 
   // Calculate profit/loss whenever total cost or current value changes
   useEffect(() => {
@@ -90,6 +94,21 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
       <div className="pnl-header">
         <h3>Profit/Loss Tracker (DRIFT)</h3>
         <div className="pnl-subtitle">BTC Transaction Monitor</div>
+        <div className="pnl-price-selector">
+          <label>Price Source: </label>
+          <md-outlined-select 
+            value={selectedPriceType} 
+            onInput={(e) => setSelectedPriceType(e.target.value)}
+            class="pnl-select"
+          >
+            <md-select-option value="USD">
+              <div slot="headline">BTC/USD: ${currentBtcPrice ? currentBtcPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}</div>
+            </md-select-option>
+            <md-select-option value="USDC">
+              <div slot="headline">BTC/USDC: ${currentBtcUsdcPrice ? currentBtcUsdcPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}</div>
+            </md-select-option>
+          </md-outlined-select>
+        </div>
       </div>
       
       <div className="pnl-grid">
@@ -97,15 +116,16 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
         <div className="pnl-column">
           <div className="pnl-label">Purchase Amount</div>
           <div className="pnl-input-wrapper">
-            <input
+            <md-outlined-text-field
               type="number"
               step="0.01"
               min="0"
+              label="Purchase Amount"
               placeholder="1000.00"
               value={dollarAmount}
-              onChange={(e) => setDollarAmount(e.target.value)}
-              className="pnl-input"
-            />
+              onInput={(e) => setDollarAmount(e.target.value)}
+              class="pnl-input"
+            ></md-outlined-text-field>
           </div>
           <div className="pnl-subtext">Dollars spent</div>
           {btcAmount > 0 && (
@@ -119,15 +139,16 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
         <div className="pnl-column">
           <div className="pnl-label">Strike Price</div>
           <div className="pnl-input-wrapper">
-            <input
+            <md-outlined-text-field
               type="number"
               step="0.01"
               min="0"
+              label="Strike Price"
               placeholder="40000.00"
               value={strikePrice}
-              onChange={(e) => setStrikePrice(e.target.value)}
-              className="pnl-input"
-            />
+              onInput={(e) => setStrikePrice(e.target.value)}
+              class="pnl-input"
+            ></md-outlined-text-field>
           </div>
           <div className="pnl-subtext">Price per BTC</div>
         </div>
@@ -204,7 +225,7 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
       </div>
 
       {/* Summary Row */}
-      {dollarAmount && strikePrice && currentBtcPrice && (
+      {dollarAmount && strikePrice && currentBtcPriceValue && (
         <div className="pnl-summary">
           <div className="summary-item">
             <span className="summary-label">Transaction Summary:</span>
@@ -220,6 +241,7 @@ export default function ProfitLossTracker({ currentBtcPrice }) {
             <span className="detail-item">Current Value: {formatCurrency(currentValue)}</span>
             <span className="detail-item">After Fees: {formatCurrency(valueAfterSell)}</span>
             <span className="detail-item">Net P&L: {formatCurrency(valueAfterSell - totalCost)}</span>
+            <span className="detail-item">Price Source: {selectedPriceType} (${currentBtcPriceValue ? currentBtcPriceValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'})</span>
           </div>
         </div>
       )}
