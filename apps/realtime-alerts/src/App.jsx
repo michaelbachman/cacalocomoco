@@ -17,7 +17,8 @@ const TRADING_PAIRS = [
   { id: 'BTC/USDC', krakenPair: 'XBT/USDC', displayName: 'BTC/USDC' },
   { id: 'SOL/USD', krakenPair: 'SOL/USD', displayName: 'SOL/USD' },
   { id: 'ETH/USD', krakenPair: 'ETH/USD', displayName: 'ETH/USD' },
-  { id: 'DOGE/USD', krakenPair: 'XDG/USD', displayName: 'DOGE/USD' }
+  { id: 'DOGE/USD', krakenPair: 'XDG/USD', displayName: 'DOGE/USD' },
+  { id: 'SHIB/USD', krakenPair: 'SHIB/USD', displayName: 'SHIB/USD' }
 ]
 
 // Kraken WebSocket API Limits & Best Practices
@@ -50,12 +51,130 @@ function formatTimestamp() {
   return `[${timeStr}]`
 }
 
-// Utility function for consistent price formatting (always 2 decimal places + thousands separators)
-function formatPrice(price) {
+// Enhanced price formatting function that handles different decimal requirements
+function formatPrice(price, pairId = null) {
+  if (price == null || isNaN(price)) return '0.00'
+  
+  // Determine decimal places based on pair type
+  let decimalPlaces = 2 // Default for most pairs
+  
+  if (pairId) {
+    // SHIB and other micro-priced tokens need more decimal places
+    if (pairId === 'SHIB/USD') {
+      decimalPlaces = 8 // SHIB has 8 pair decimals
+    } else if (pairId === 'DOGE/USD') {
+      decimalPlaces = 7 // DOGE has 7 pair decimals  
+    } else if (pairId === 'BTC/USD' || pairId === 'BTC/USDC') {
+      decimalPlaces = 2 // Bitcoin typically 2 decimals
+    } else if (pairId === 'ETH/USD') {
+      decimalPlaces = 2 // Ethereum typically 2 decimals
+    } else if (pairId === 'SOL/USD') {
+      decimalPlaces = 2 // Solana typically 2 decimals
+    }
+  }
+  
   return price.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    minimumFractionDigits: Math.min(decimalPlaces, 8), // Cap at 8 decimals
+    maximumFractionDigits: Math.min(decimalPlaces, 8)
   })
+}
+
+// Lightweight Kraken pairs cache for faster loading
+const krakenPairsCache = {
+  data: null,
+  lastUpdate: 0,
+  cacheDuration: 24 * 60 * 60 * 1000, // 24 hours
+  
+  async getPairs() {
+    // Return cached data if fresh
+    if (this.data && (Date.now() - this.lastUpdate) < this.cacheDuration) {
+      return this.data
+    }
+    
+    // Check localStorage for cached data
+    const cached = this.getFromStorage()
+    if (cached && this.isStorageValid()) {
+      this.data = cached
+      this.lastUpdate = Date.now()
+      return cached
+    }
+    
+    // Fetch fresh data from API
+    try {
+      const response = await fetch('https://api.kraken.com/0/public/AssetPairs')
+      const result = await response.json()
+      
+      // Extract only essential data
+      this.data = this.extractEssential(result.result)
+      this.lastUpdate = Date.now()
+      
+      // Cache in localStorage (lightweight)
+      this.saveToStorage(this.data)
+      
+      return this.data
+    } catch (error) {
+      console.warn('Failed to fetch pairs from API, using cached/default data:', error)
+      // Return cached data if fetch fails
+      return this.data || this.getDefaultPairs()
+    }
+  },
+  
+  extractEssential(pairs) {
+    // Only extract pairs we actually need + a few popular ones
+    const essential = {}
+    const neededPairs = ['XBTUSD', 'XBTUSDC', 'SOLUSD', 'ETHUSD', 'XDGUSD', 'SHIBUSD']
+    
+    neededPairs.forEach(pair => {
+      if (pairs[pair]) {
+        essential[pair] = {
+          wsname: pairs[pair].wsname,
+          pair_decimals: pairs[pair].pair_decimals,
+          status: pairs[pair].status
+        }
+      }
+    })
+    
+    return essential
+  },
+  
+  saveToStorage(pairs) {
+    try {
+      localStorage.setItem('kraken_pairs', JSON.stringify(pairs))
+      localStorage.setItem('kraken_pairs_time', this.lastUpdate.toString())
+    } catch (error) {
+      // Ignore storage errors, use memory only
+      console.warn('localStorage failed, using memory cache only:', error)
+    }
+  },
+  
+  getFromStorage() {
+    try {
+      return JSON.parse(localStorage.getItem('kraken_pairs'))
+    } catch {
+      return null
+    }
+  },
+  
+  isStorageValid() {
+    try {
+      const storedTime = localStorage.getItem('kraken_pairs_time')
+      return storedTime && (Date.now() - parseInt(storedTime)) < this.cacheDuration
+    } catch {
+      return false
+    }
+  },
+  
+  getDefaultPairs() {
+    // Fallback to hardcoded essential pairs
+    return {
+      'XBTUSD': { wsname: 'XBT/USD', pair_decimals: 1, status: 'online' },
+      'XBTUSDC': { wsname: 'XBT/USDC', pair_decimals: 2, status: 'online' },
+      'SOLUSD': { wsname: 'SOL/USD', pair_decimals: 5, status: 'online' },
+      'ETHUSD': { wsname: 'ETH/USD', pair_decimals: 2, status: 'online' },
+      'XDGUSD': { wsname: 'XDG/USD', pair_decimals: 7, status: 'online' },
+      'SHIBUSD': { wsname: 'SHIB/USD', pair_decimals: 8, status: 'online' }
+    }
+  }
 }
 
 function nowPT(){
@@ -204,7 +323,7 @@ export default function App(){
     }, backoffRef.current)
   }
 
-  function connect(){
+  async function connect(){
     // Check if WebSocket is already open and healthy
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       log('WebSocket already open and healthy, skipping connection', 'info')
@@ -222,6 +341,11 @@ export default function App(){
     log(`Connecting to ${KRAKEN_WS}...`, 'info')
     
     try {
+      // Get cached pairs data for faster loading
+      log('Fetching cached pairs data...', 'info')
+      const cachedPairs = await krakenPairsCache.getPairs()
+      log(`Loaded ${Object.keys(cachedPairs).length} pairs from cache`, 'info')
+      
       // Create new WebSocket connection
       const ws = new WebSocket(KRAKEN_WS)
       wsRef.current = ws
@@ -343,7 +467,7 @@ export default function App(){
               
               if (!Number.isNaN(p)) {
                 setPrices(prev => ({ ...prev, [tradingPair.id]: p }))
-                log(`Price update: ${tradingPair.displayName} = $${formatPrice(p)}`, 'info')
+                log(`Price update: ${tradingPair.displayName} = $${formatPrice(p, tradingPair.id)}`, 'info')
                 
                 // Store price data in database (every 10th update to avoid spam) - NON-BLOCKING
                 if (messageCountRef.current % 10 === 0) {
@@ -450,6 +574,14 @@ export default function App(){
   // Boot once
   useEffect(() => {
     log('Booting Kraken realtime alerts application...', 'info')
+    
+    // Initialize cache in background (non-blocking)
+    krakenPairsCache.getPairs().then(pairs => {
+      log(`Cache initialized with ${Object.keys(pairs).length} pairs`, 'info')
+    }).catch(error => {
+      log(`Cache initialization failed: ${error.message}`, 'warn')
+    })
+    
     connect()
     return () => {
       log('Application shutting down, cleaning up...', 'info')
@@ -476,7 +608,7 @@ export default function App(){
           <div className="pairs-grid">
             {TRADING_PAIRS.map(pair => (
               <div key={pair.id} className="pair-display">
-                <div className="val">{prices[pair.id] != null ? `$${formatPrice(prices[pair.id])}` : '—'}</div>
+                <div className="val">{prices[pair.id] != null ? `$${formatPrice(prices[pair.id], pair.id)}` : '—'}</div>
                 <div className="label hero-label">{pair.displayName} (Kraken)</div>
               </div>
             ))}
@@ -508,6 +640,10 @@ export default function App(){
           </div>
           <div className="small">
             Errors: {errorCount} • Messages: {messageCountRef.current}
+          </div>
+          <div className="small">
+            Cache: {krakenPairsCache.data ? `${Object.keys(krakenPairsCache.data).length} pairs` : 'Initializing...'} • 
+            Last Update: {krakenPairsCache.lastUpdate ? `${Math.round((Date.now() - krakenPairsCache.lastUpdate) / 60000)}m ago` : 'Never'}
           </div>
         </div>
         <div className="card">
