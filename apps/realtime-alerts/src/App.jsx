@@ -4,7 +4,9 @@ import DatabaseTest from './DatabaseTest'
 import HistoricalData from './HistoricalData'
 import ApiTest from './ApiTest'
 import GeminiTest from './gemini/components/GeminiTest.jsx'
+import PerformanceDashboard from './components/PerformanceDashboard'
 import { storePriceData, storeConnectionLog } from './db.js'
+import { performanceMonitor } from './performance/PerformanceMonitor'
 
 // ---- Config ----
 const KRAKEN_WS = 'wss://ws.kraken.com'
@@ -13,7 +15,9 @@ const KRAKEN_WS = 'wss://ws.kraken.com'
 const TRADING_PAIRS = [
   { id: 'BTC/USD', krakenPair: 'XBT/USD', displayName: 'BTC/USD' },
   { id: 'BTC/USDC', krakenPair: 'XBT/USDC', displayName: 'BTC/USDC' },
-  { id: 'SOL/USD', krakenPair: 'SOL/USD', displayName: 'SOL/USD' }
+  { id: 'SOL/USD', krakenPair: 'SOL/USD', displayName: 'SOL/USD' },
+  { id: 'ETH/USD', krakenPair: 'ETH/USD', displayName: 'ETH/USD' },
+  { id: 'DOGE/USD', krakenPair: 'XDG/USD', displayName: 'DOGE/USD' }
 ]
 
 // Kraken WebSocket API Limits & Best Practices
@@ -97,6 +101,15 @@ export default function App(){
     const timestamp = formatTimestamp()
     const levelPrefix = level === 'error' ? '❌' : level === 'warn' ? '⚠️' : level === 'success' ? '✅' : 'ℹ️'
     setLogs(l => [ `${timestamp} ${levelPrefix} ${s}`, ...(l||[]) ].slice(0, LOG_MAX))
+    
+    // Update PerformanceMonitor with connection status
+    try {
+      if (level === 'error') {
+        performanceMonitor.recordApiRequest(0, false)
+      }
+    } catch (err) {
+      // Silently fail if PerformanceMonitor not available
+    }
   }
 
   function bump(){
@@ -140,7 +153,17 @@ export default function App(){
         log(`Connection quality: waiting for valid ping/pong data...`, 'info')
       }
     }
-  }, [])
+  }, [status])
+  
+  // Update PerformanceMonitor with connection status
+  useEffect(() => {
+    try {
+      performanceMonitor.updateConnectionStatus('websocket', status, 0)
+      console.log('🔄 PerformanceMonitor updated with status:', status)
+    } catch (err) {
+      console.warn('PerformanceMonitor update failed:', err)
+    }
+  }, [status])
 
   // Update activity display for UI
   const updateActivityDisplay = useCallback(() => {
@@ -520,6 +543,9 @@ export default function App(){
 
       {/* Gemini AI Integration Component */}
       {showGemini && <GeminiTest realTimePrices={prices} historicalData={historicalData} />}
+
+      {/* Performance Dashboard Component - v1.2 */}
+      <PerformanceDashboard />
     </div>
   )
 }

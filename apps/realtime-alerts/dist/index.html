@@ -3,10 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; connect-src 'self' https://api.kraken.com wss://ws.kraken.com; img-src 'self' data:; style-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; font-src 'self' https://fonts.gstatic.com; frame-ancestors 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://esm.run; connect-src 'self' https://api.kraken.com wss://ws.kraken.com https://www.alphavantage.co https://generativelanguage.googleapis.com; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com https://esm.run; font-src 'self' https://fonts.gstatic.com">
     <title>NKO</title>
     <link rel="preconnect" href="https://api.kraken.com" crossorigin>
     <link rel="preconnect" href="https://ws.kraken.com" crossorigin>
+    <link rel="preconnect" href="https://www.alphavantage.co" crossorigin>
+    <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Noto+Sans+Mono:wght@400;500;600&display=swap&v=2" rel="stylesheet">
@@ -14,12 +16,12 @@
     <script type="importmap">
       {
         "imports": {
-          "@material/web/": "https://esm.run/@material/web/"
+          "@material/web/": "https://unpkg.com/@material/web@2.4.0/"
         }
       }
     </script>
-    <script type="module" crossorigin src="/assets/index-B1T1RV5C.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-BWgQ7hAg.css">
+    <script type="module" crossorigin src="/assets/index-DEGoYWjT.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-CUsivc0D.css">
   </head>
   <body>
     <div id="root"></div>
