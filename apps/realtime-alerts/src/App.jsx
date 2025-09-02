@@ -1,5 +1,12 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import ProfitLossTracker from './ProfitLossTracker'
+import DatabaseTest from './DatabaseTest'
+import HistoricalData from './HistoricalData'
+import ApiTest from './ApiTest'
+import GeminiTest from './gemini/components/GeminiTest.jsx'
+import PerformanceDashboard from './components/PerformanceDashboard'
+import { storePriceData, storeConnectionLog } from './db.js'
+import { performanceMonitor } from './performance/PerformanceMonitor'
 
 // ---- Config ----
 const KRAKEN_WS = 'wss://ws.kraken.com'
@@ -7,15 +14,25 @@ const KRAKEN_WS = 'wss://ws.kraken.com'
 // Define trading pairs with their Kraken WS format
 const TRADING_PAIRS = [
   { id: 'BTC/USD', krakenPair: 'XBT/USD', displayName: 'BTC/USD' },
-  { id: 'SOL/USD', krakenPair: 'SOL/USD', displayName: 'SOL/USD' }
+  { id: 'BTC/USDC', krakenPair: 'XBT/USDC', displayName: 'BTC/USDC' },
+  { id: 'SOL/USD', krakenPair: 'SOL/USD', displayName: 'SOL/USD' },
+  { id: 'ETH/USD', krakenPair: 'ETH/USD', displayName: 'ETH/USD' },
+  { id: 'DOGE/USD', krakenPair: 'XDG/USD', displayName: 'DOGE/USD' }
 ]
 
-const STALE_MS = 40000              // consider stale if no WS activity for 40s
-const PING_MS  = 15000              // send ping every 15s to keep intermediaries awake
-const BACKOFF_MIN = 2000            // 2s
-const BACKOFF_MAX = 60000           // 60s
-const MAX_RECONNECT_ATTEMPTS = 10   // max consecutive reconnection attempts
-const CONNECTION_TIMEOUT = 10000    // connection timeout in ms
+// Kraken WebSocket API Limits & Best Practices
+// - Rate limit: 20 requests per 10 seconds (2 req/sec)
+// - Connection limit: 1 connection per IP
+// - Heartbeat: Server sends heartbeat every 30 seconds
+// - Reconnection: Use exponential backoff, respect rate limits
+// - Historical data: REST API rate limited to 2 req/sec with 5min caching
+const STALE_MS = 60000              // consider stale if no WS activity for 60s (respectful of server heartbeat)
+const PING_MS  = 30000              // send ping every 30s (matches server heartbeat, reduces load)
+const BACKOFF_MIN = 5000            // 5s minimum backoff (respectful of rate limits)
+const BACKOFF_MAX = 60000           // 60s maximum backoff (prevents aggressive reconnection)
+const MAX_RECONNECT_ATTEMPTS = 8    // max consecutive reconnection attempts (reduced to be respectful)
+const CONNECTION_TIMEOUT = 15000    // connection timeout in ms (increased to be more patient)
+const HEALTH_CHECK_MS = 30000       // health check every 30s (less frequent monitoring)
 
 // Visible logs cap to keep things light
 const LOG_MAX = 200
@@ -60,6 +77,8 @@ export default function App(){
   const [connectionQuality, setConnectionQuality] = useState('unknown')
   const [reconnectAttempts, setReconnectAttempts] = useState(0)
   const [errorCount, setErrorCount] = useState(0)
+  const [showGemini, setShowGemini] = useState(false)
+  const [historicalData, setHistoricalData] = useState(null)
 
   // refs (never trigger re-render)
   const wsRef = useRef(null)
@@ -75,11 +94,22 @@ export default function App(){
   const lastPongTimeRef = useRef(0)
   const messageCountRef = useRef(0)
   const errorCountRef = useRef(0)
+  const hasValidPongRef = useRef(false)  // Track if we've received at least one valid pong
+  const healthCheckIvRef = useRef(null)  // Store health check timer reference
 
   function log(s, level = 'info'){
     const timestamp = formatTimestamp()
     const levelPrefix = level === 'error' ? '❌' : level === 'warn' ? '⚠️' : level === 'success' ? '✅' : 'ℹ️'
     setLogs(l => [ `${timestamp} ${levelPrefix} ${s}`, ...(l||[]) ].slice(0, LOG_MAX))
+    
+    // Update PerformanceMonitor with connection status
+    try {
+      if (level === 'error') {
+        performanceMonitor.recordApiRequest(0, false)
+      }
+    } catch (err) {
+      // Silently fail if PerformanceMonitor not available
+    }
   }
 
   function bump(){
@@ -98,21 +128,42 @@ export default function App(){
     if (pingIvRef.current)  { clearInterval(pingIvRef.current);  pingIvRef.current  = null }
     if (reconnectToRef.current) { clearTimeout(reconnectToRef.current); reconnectToRef.current = null }
     if (connectionTimeoutRef.current) { clearTimeout(connectionTimeoutRef.current); connectionTimeoutRef.current = null }
+    if (healthCheckIvRef.current) { clearInterval(healthCheckIvRef.current); healthCheckIvRef.current = null }
   }
 
   // Memoized connection quality calculation to prevent unnecessary recalculations
   const updateConnectionQuality = useCallback(() => {
-    const pingLatency = lastPongTimeRef.current - lastPingTimeRef.current
-    
-    let quality = 'unknown'
-    if (pingLatency > 0 && pingLatency < 100) quality = 'excellent'
-    else if (pingLatency >= 100 && pingLatency < 300) quality = 'good'
-    else if (pingLatency >= 300 && pingLatency < 1000) quality = 'fair'
-    else if (pingLatency >= 1000) quality = 'poor'
-    
-    setConnectionQuality(quality)
-    log(`Connection quality updated: ${quality} (${pingLatency}ms)`, 'info')
-  }, [])
+    // Only calculate quality if we have valid ping/pong timestamps AND have received at least one pong
+    if (lastPingTimeRef.current > 0 && lastPongTimeRef.current > 0 && hasValidPongRef.current) {
+      const pingLatency = lastPongTimeRef.current - lastPingTimeRef.current
+      
+      let quality = 'unknown'
+      if (pingLatency > 0 && pingLatency < 100) quality = 'excellent'
+      else if (pingLatency >= 100 && pingLatency < 300) quality = 'good'
+      else if (pingLatency >= 300 && pingLatency < 1000) quality = 'fair'
+      else if (pingLatency >= 1000) quality = 'poor'
+      
+      setConnectionQuality(quality)
+      log(`Connection quality updated: ${quality} (${pingLatency}ms)`, 'info')
+    } else {
+      // If we don't have valid timestamps yet, just log that we're waiting
+      if (!hasValidPongRef.current) {
+        log(`Connection quality: waiting for first pong response...`, 'info')
+      } else {
+        log(`Connection quality: waiting for valid ping/pong data...`, 'info')
+      }
+    }
+  }, [status])
+  
+  // Update PerformanceMonitor with connection status
+  useEffect(() => {
+    try {
+      performanceMonitor.updateConnectionStatus('websocket', status, 0)
+      console.log('🔄 PerformanceMonitor updated with status:', status)
+    } catch (err) {
+      console.warn('PerformanceMonitor update failed:', err)
+    }
+  }, [status])
 
   // Update activity display for UI
   const updateActivityDisplay = useCallback(() => {
@@ -140,235 +191,244 @@ export default function App(){
       return
     }
     
+    // Only calculate backoff if we're actually going to reconnect
+    if (reconnectAttempts > 0) {
+      // Exponential backoff with jitter - only increase after failed attempts
+      backoffRef.current = Math.min(backoffRef.current * 1.5 + Math.random() * 1000, BACKOFF_MAX)
+    }
+    
     log(`Scheduling reconnect attempt ${reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS} in ${(backoffRef.current/1000).toFixed(1)}s`, 'info')
     reconnectToRef.current = setTimeout(() => {
       reconnectToRef.current = null // Clear the ref before attempting connection
       connect()
     }, backoffRef.current)
-    
-    // Exponential backoff with jitter
-    backoffRef.current = Math.min(backoffRef.current * 1.5 + Math.random() * 1000, BACKOFF_MAX)
   }
 
   function connect(){
     // Check if WebSocket is already open and healthy
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      log('WebSocket already open and healthy, skipping connection attempt', 'info')
+      log('WebSocket already open and healthy, skipping connection', 'info')
       return
     }
     
-    // Check if already connecting
+    // Prevent multiple simultaneous connection attempts
     if (connecting) {
       log('Connection already in progress, skipping duplicate', 'info')
       return
     }
     
-    // Check if we're already scheduled to reconnect
-    if (reconnectToRef.current) {
-      log('Reconnection already scheduled, clearing and proceeding', 'info')
-      clearTimeout(reconnectToRef.current)
-      reconnectToRef.current = null
-    }
-    
     setConnecting(true)
     setStatus('connecting')
-    
-    // Connection timeout
-    connectionTimeoutRef.current = setTimeout(() => {
-      log('Connection timeout, closing and retrying', 'warn')
-      safeClose(1001, 'timeout')
-      setConnecting(false)
-      scheduleReconnect()
-    }, CONNECTION_TIMEOUT)
-    
     log(`Connecting to ${KRAKEN_WS}...`, 'info')
     
-    const ws = new WebSocket(KRAKEN_WS)
-    wsRef.current = ws
-    
-    ws.onopen = () => {
-      log('WebSocket connected, subscribing to pairs...', 'success')
-      clearTimeout(connectionTimeoutRef.current)
-      setStatus('open')
-      setConnecting(false)
-      setReconnectAttempts(0)
-      backoffRef.current = BACKOFF_MIN
+    try {
+      // Create new WebSocket connection
+      const ws = new WebSocket(KRAKEN_WS)
+      wsRef.current = ws
       
-      // Subscribe to all trading pairs
-      TRADING_PAIRS.forEach(pair => {
-        const sub = { 
-          event: 'subscribe', 
-          pair: [pair.krakenPair], 
-          subscription: { name: 'ticker' } 
-        }
-        ws.send(JSON.stringify(sub))
-        log(`Subscribing to ${pair.displayName} (${pair.krakenPair})`, 'info')
-      })
-      
-      // Start ping interval
-      pingIvRef.current = setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) {
-          lastPingTimeRef.current = Date.now()
-          ws.send(JSON.stringify({ event: 'ping' }))
-          log('WS → ping sent', 'info')
-        }
-      }, PING_MS)
-      
-      // Start activity monitoring
-      staleIvRef.current = setInterval(updateActivityDisplay, 1000)
-    }
-    
-    ws.onmessage = (ev) => {
-      let msg
-      try { msg = JSON.parse(ev.data) } catch { 
-        errorCountRef.current++
-        setErrorCount(errorCountRef.current)
-        log(`Failed to parse WebSocket message: ${ev.data}`, 'error')
-        return 
-      }
-      
-      // Any parsed message counts as activity
-      bump()
-      messageCountRef.current++
-      
-      // Update connection quality less frequently (every 20 messages)
-      if (messageCountRef.current % 20 === 0) {
-        updateConnectionQuality()
-      }
-
-      // Heartbeat keeps us alive
-      if (msg?.event === 'heartbeat') {
-        log(`WS ← heartbeat received`, 'info')
-        return
-      }
-
-      // Pong response to ping
-      if (msg?.event === 'pong') {
-        lastPongTimeRef.current = Date.now()
-        const latency = lastPongTimeRef.current - lastPingTimeRef.current
-        log(`WS ← pong received (latency: ${latency}ms)`, 'info')
-        // Update quality immediately after pong
-        updateConnectionQuality()
-        return
-      }
-
-      // System / subscription status
-      if (msg?.event === 'systemStatus') {
-        log(`WS ← systemStatus: ${msg.status || 'unknown'}`, 'info')
-        if (msg.status === 'maintenance') {
-          log('Kraken system in maintenance mode - will retry later', 'warn')
-          backoffRef.current = Math.max(backoffRef.current * 2, 30000) // longer backoff for maintenance
-        }
-        return
-      }
-      
-      if (msg?.event === 'subscriptionStatus') {
-        const st = msg.status
-        if (st === 'subscribed') {
-          // Find which pair this subscription belongs to
-          const pair = TRADING_PAIRS.find(p => p.krakenPair === msg.pair)
-          if (pair) {
-            channelIdsRef.current[pair.id] = msg.channelID
-            log(`WS ← ${pair.displayName} subscribed (channel: ${msg.channelID})`, 'success')
-          }
-          backoffRef.current = BACKOFF_MIN // reset backoff on success
-        } else if (st === 'error') {
-          log(`WS ← subscriptionStatus: error: ${msg.errorMessage || 'unknown error'}`, 'error')
-          errorCountRef.current++
-          setErrorCount(errorCountRef.current)
-          backoffRef.current = Math.max(backoffRef.current * 1.5, BACKOFF_MIN + 1000)
+      // Set connection timeout
+      connectionTimeoutRef.current = setTimeout(() => {
+        if (ws.readyState === WebSocket.CONNECTING) {
+          log('Connection timeout, closing stale connection', 'warn')
+          safeClose(1000, 'timeout')
+          setConnecting(false)
           scheduleReconnect()
         }
-        return
-      }
-
-      // Ticker array form: [channelID, data, channelName, pair]
-      if (Array.isArray(msg) && msg.length >= 4) {
-        const [chanId, payload, channelName, pair] = msg
-        if (channelName === 'ticker') {
-          // Find which pair this message belongs to
-          const tradingPair = TRADING_PAIRS.find(p => p.krakenPair === pair)
-          if (tradingPair && (channelIdsRef.current[tradingPair.id] == null || chanId === channelIdsRef.current[tradingPair.id])) {
-            const lastStr = payload?.c?.[0]
-            if (lastStr != null) {
-              const p = Number(lastStr)
-              if (!Number.isNaN(p)) {
-                setPrices(prev => ({ ...prev, [tradingPair.id]: p }))
-                // Log price updates less frequently to avoid spam
-                if (messageCountRef.current % 100 === 0) {
-                  log(`${tradingPair.displayName} price update: $${formatPrice(p)}`, 'info')
-                }
-                return
-              }
+      }, CONNECTION_TIMEOUT)
+      
+      ws.onopen = () => {
+        log('WebSocket connected successfully', 'success')
+        setStatus('open')
+        setConnecting(false)
+        setReconnectAttempts(0)
+        backoffRef.current = BACKOFF_MIN  // Reset backoff to minimum on successful connection
+        
+        // Reset pong flag on new connection
+        hasValidPongRef.current = false
+        
+        // Store connection log in database (non-blocking)
+        setTimeout(() => {
+          storeConnectionLog('kraken_ws', 'connected', 'WebSocket connection established').catch(err => {
+            console.warn('Connection log storage failed (non-critical):', err)
+          })
+        }, 0)
+        
+        // Subscribe to all trading pairs
+        const subscribeMsg = {
+          event: 'subscribe',
+          pair: TRADING_PAIRS.map(p => p.krakenPair),
+          subscription: {
+            name: 'ticker'
+          }
+        }
+        
+        ws.send(JSON.stringify(subscribeMsg))
+        log(`Subscribed to ${TRADING_PAIRS.length} trading pairs`, 'info')
+        
+        // Start monitoring timers
+        staleIvRef.current = setInterval(updateActivityDisplay, 1000)
+        pingIvRef.current = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            lastPingTimeRef.current = Date.now()
+            ws.send(JSON.stringify({ event: 'ping' }))
+            log('Ping sent', 'info')
+          }
+        }, PING_MS)
+        
+        // Start health check timer - only update quality if we have valid data
+        healthCheckIvRef.current = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN && hasValidPongRef.current) {
+            // Add additional check: only run health check if we haven't sent a ping in the last 5 seconds
+            const timeSinceLastPing = Date.now() - lastPingTimeRef.current
+            if (timeSinceLastPing > 5000) { // 5 second buffer after ping
+              updateConnectionQuality()
             }
           }
-          return
+        }, 45000)  // Run health check every 45 seconds (different from ping interval)
+      }
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          bump() // Update activity timestamp
+          
+          // Debug: Log all incoming messages to see what we're receiving
+          log(`Message received: ${JSON.stringify(data).substring(0, 100)}...`, 'info')
+          
+          // Handle different message types
+          if (data.event === 'subscriptionStatus') {
+            if (data.status === 'subscribed') {
+              channelIdsRef.current[data.pair] = data.channelID
+              log(`Subscribed to ${data.pair} (Channel ${data.channelID})`, 'success')
+            }
+          } else if (data.event === 'pong') {
+            lastPongTimeRef.current = Date.now()
+            const latency = lastPongTimeRef.current - lastPingTimeRef.current
+            if (latency > 0 && lastPingTimeRef.current > 0) {
+              hasValidPongRef.current = true  // Mark that we've received a valid pong
+              log(`Pong received, latency: ${latency}ms`, 'info')
+              // Update connection quality immediately after valid pong
+              updateConnectionQuality()
+            } else {
+              log(`Pong received, but no valid ping timestamp available`, 'warn')
+            }
+          } else if (data.event === 'heartbeat') {
+            // Handle Kraken heartbeat messages - these keep the connection alive
+            log(`Heartbeat received from Kraken`, 'info')
+          } else if (Array.isArray(data) && data.length >= 4) {
+            // Handle ticker data - Kraken format: [channelID, data, channelName, pair]
+            const [channelID, tickerData, channelName, pair] = data
+            
+            log(`Ticker data received: channel=${channelID}, name=${channelName}, pair=${pair}`, 'info')
+            
+            // Find the trading pair for this channel - try multiple matching strategies
+            let tradingPair = null
+            
+            // Strategy 1: Match by channel ID
+            for (const [pairId, chanId] of Object.entries(channelIdsRef.current)) {
+              if (chanId === channelID) {
+                tradingPair = TRADING_PAIRS.find(p => p.id === pairId)
+                break
+              }
+            }
+            
+            // Strategy 2: Match by pair name if channel ID didn't work
+            if (!tradingPair) {
+              tradingPair = TRADING_PAIRS.find(p => p.krakenPair === pair)
+            }
+            
+            if (tradingPair && tickerData && tickerData.c && tickerData.c.length > 0) {
+              const p = parseFloat(tickerData.c[0])
+              messageCountRef.current++
+              
+              if (!Number.isNaN(p)) {
+                setPrices(prev => ({ ...prev, [tradingPair.id]: p }))
+                log(`Price update: ${tradingPair.displayName} = $${formatPrice(p)}`, 'info')
+                
+                // Store price data in database (every 10th update to avoid spam) - NON-BLOCKING
+                if (messageCountRef.current % 10 === 0) {
+                  // Use setTimeout to make database calls non-blocking
+                  setTimeout(() => {
+                    storePriceData(tradingPair.id, p).catch(err => {
+                      // Log error but don't break the connection
+                      console.warn('Database storage failed (non-critical):', err)
+                    })
+                  }, 0)
+                }
+              } else {
+                log(`Invalid price data for ${tradingPair.displayName}: ${tickerData.c[0]}`, 'warn')
+              }
+            } else {
+              log(`Ticker data format issue: pair=${pair}, tickerData=${JSON.stringify(tickerData).substring(0, 100)}`, 'warn')
+            }
+          } else {
+            // Log any other message types we receive with more detail
+            log(`Unhandled message type: ${typeof data}, content: ${JSON.stringify(data).substring(0, 150)}`, 'info')
+          }
+        } catch (error) {
+          errorCountRef.current++
+          setErrorCount(errorCountRef.current)
+          log(`Message parsing error: ${error.message}`, 'error')
         }
       }
-    }
-
-    ws.onclose = (ev) => {
-      clearTimers()
-      const code = ev?.code || 1005
-      const reason = ev?.reason || ''
-      setStatus('closed')
       
-      // Log specific close codes with helpful messages
-      let closeMessage = `WebSocket closed (code=${code}`
-      if (reason) closeMessage += `, reason="${reason}"`
-      closeMessage += ')'
-      
-      if (code === 1000) {
-        log('WebSocket closed cleanly', 'info')
-      } else if (code === 1001) {
-        log('WebSocket closed: endpoint going away', 'warn')
-      } else if (code === 1002) {
-        log('WebSocket closed: protocol error', 'error')
-      } else if (code === 1003) {
-        log('WebSocket closed: unsupported data type', 'error')
-      } else if (code === 1005) {
-        log('WebSocket closed: no status code', 'warn')
-      } else if (code === 1006) {
-        log('WebSocket closed: abnormal closure', 'warn')
-      } else if (code === 1011) {
-        log('WebSocket closed: server error', 'error')
-      } else if (code === 1012) {
-        log('WebSocket closed: service restart', 'warn')
-      } else if (code === 1013) {
-        log('WebSocket closed: try again later', 'warn')
-      } else if (code === 1014) {
-        log('WebSocket closed: bad gateway', 'error')
-      } else if (code === 1015) {
-        log('WebSocket closed: TLS handshake failed', 'error')
-      } else {
-        log(closeMessage, 'warn')
+      ws.onclose = (event) => {
+        log(`WebSocket closed: ${event.code} ${event.reason}`, 'warn')
+        setStatus('disconnected')
+        setConnecting(false)
+        clearTimers()
+        
+        // Store connection log in database (non-blocking)
+        setTimeout(() => {
+          storeConnectionLog('kraken_ws', 'disconnected', `WebSocket closed: ${event.code} ${event.reason}`).catch(err => {
+            console.warn('Connection log storage failed (non-critical):', err)
+          })
+        }, 0)
+        
+        // Schedule reconnection if not a clean close
+        if (event.code !== 1000) {
+          scheduleReconnect()
+        }
       }
       
-      if (!unsubscribedRef.current) {
-        scheduleReconnect()
+      ws.onerror = (error) => {
+        errorCountRef.current++
+        setErrorCount(errorCountRef.current)
+        log(`WebSocket error: ${error.message || 'Unknown error'}`, 'error')
+        setConnecting(false)
       }
-    }
-
-    ws.onerror = (ev) => {
-      errorCountRef.current++
-      setErrorCount(errorCountRef.current)
-      log(`WebSocket error: ${ev.type || 'unknown error'}`, 'error')
+      
+    } catch (error) {
+      log(`Connection setup error: ${error.message}`, 'error')
+      setConnecting(false)
+      scheduleReconnect()
     }
   }
 
   function disconnect(){
-    log('Manual disconnect requested', 'info')
+    log('Disconnecting...', 'info')
     unsubscribedRef.current = true
-    safeClose(1000, 'manual')
     clearTimers()
+    safeClose(1000, 'user disconnect')
     setStatus('disconnected')
-    setReconnectAttempts(0)
-    setLastActivityAgo(0)
-    setConnectionQuality('unknown')
-    // Clear channel IDs and prices on disconnect
-    channelIdsRef.current = {}
-    setPrices({})
+    setConnecting(false)
+    
+    // Store connection log in database (non-blocking)
+    setTimeout(() => {
+      storeConnectionLog('kraken_ws', 'disconnected', 'User initiated disconnect').catch(err => {
+        console.warn('Connection log storage failed (non-critical):', err)
+      })
+    }, 0)
   }
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      log('Component unmounting, cleaning up...', 'info')
+      clearTimers()
+      safeClose(1000, 'unmount')
+    }
+  }, [])
 
   // Visibility handling: on resume, if closed, reconnect
   useEffect(() => {
@@ -431,6 +491,9 @@ export default function App(){
           }} disabled={connecting || status === 'open'}>
             Reconnect
           </button>
+          <button onClick={() => setShowGemini(!showGemini)}>
+            🔮 Gemini AI {showGemini ? '(Hide)' : '(Show)'}
+          </button>
         </div>
       </div>
 
@@ -464,7 +527,25 @@ export default function App(){
       </div>
 
       {/* Profit/Loss Tracker Component - Can be easily removed */}
-      <ProfitLossTracker currentBtcPrice={prices['BTC/USD']} />
+      <ProfitLossTracker 
+        currentBtcPrice={prices['BTC/USD']} 
+        currentBtcUsdcPrice={prices['BTC/USDC']} 
+      />
+
+      {/* Database Test Component */}
+      <DatabaseTest />
+
+      {/* Historical Data Component */}
+      <HistoricalData onDataUpdate={setHistoricalData} />
+
+      {/* Alpha Vantage API Test Component */}
+      <ApiTest />
+
+      {/* Gemini AI Integration Component */}
+      {showGemini && <GeminiTest realTimePrices={prices} historicalData={historicalData} />}
+
+      {/* Performance Dashboard Component - v1.2 */}
+      <PerformanceDashboard />
     </div>
   )
 }
