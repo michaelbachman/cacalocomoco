@@ -5,12 +5,17 @@ export default defineConfig({
   plugins: [react()],
   build: {
     target: 'es2019',
-    sourcemap: false
+    sourcemap: false,
+    cssCodeSplit: true,
+    minify: 'esbuild'
   },
   server: {
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Cross-Origin-Embedder-Policy': 'require-corp'
     }
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom']
   }
 })

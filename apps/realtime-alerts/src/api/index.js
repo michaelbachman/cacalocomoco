@@ -4,7 +4,7 @@
  */
 
 // Core API infrastructure
-export { BaseApiClient, AlphaVantageClient } from './ApiClient.js'
+export { default as NetlifyClient } from './NetlifyClient.js'
 
 // Configuration
 export { 
@@ -21,3 +21,4 @@ export { default as TechnicalAnalysisService } from './TechnicalAnalysis.js'
 
 // Default configuration export
 export { default as apiConfig } from './config.js'
+

@@ -110,3 +110,4 @@ For Alpha Vantage API issues:
 - Check their documentation: https://www.alphavantage.co/documentation/
 - Free tier limits: 5 requests per minute
 - Paid plans available for higher limits
+

@@ -4,13 +4,12 @@
  * Calculates buy/sell signals for moving averages, oscillators, and other indicators
  */
 
-import { AlphaVantageClient } from './ApiClient.js'
+import NetlifyClient from './NetlifyClient.js'
 import { ALPHA_VANTAGE_CONFIG } from './config.js'
-import { storeTechnicalIndicators, storeTechnicalAnalysis, storeAnalysisSession } from '../db.js'
 
 export class TechnicalAnalysisService {
-  constructor(apiKey) {
-    this.client = new AlphaVantageClient(apiKey)
+  constructor() {
+    this.client = new NetlifyClient()
     this.symbol = 'BTCUSD' // Alpha Vantage format for Bitcoin
     this.currentPrice = null
     this.indicators = {}
@@ -53,16 +52,16 @@ export class TechnicalAnalysisService {
       console.log('🔧 Default indicators:', indicators)
       
       // Store analysis session start
-      await storeAnalysisSession(this.symbol, interval, 'started', { indicators: indicators.map(i => i.type) })
+      await this.client.storeAnalysisSession(this.symbol, interval, 'started', { indicators: indicators.map(i => i.type) })
       
       this.indicators = await this.client.getTechnicalIndicators(this.symbol, interval, indicators)
       console.log('🔧 Fetched indicators:', this.indicators)
       
       // Store technical indicators data
-      await storeTechnicalIndicators(this.symbol, interval, this.indicators)
+      await this.client.storeTechnicalIndicators(this.symbol, interval, this.indicators)
       
       // Store analysis session success
-      await storeAnalysisSession(this.symbol, interval, 'completed', { 
+      await this.client.storeAnalysisSession(this.symbol, interval, 'completed', { 
         indicators: indicators.map(i => i.type),
         success: true 
       })
@@ -72,7 +71,7 @@ export class TechnicalAnalysisService {
       console.error('🔧 Failed to fetch technical indicators:', error)
       
       // Store analysis session failure
-      await storeAnalysisSession(this.symbol, interval, 'failed', { 
+      await this.client.storeAnalysisSession(this.symbol, interval, 'failed', { 
         error: error.message,
         success: false 
       })
@@ -499,7 +498,7 @@ export class TechnicalAnalysisService {
       }
       
       // Store the complete analysis in database
-      await storeTechnicalAnalysis(analysis)
+      await this.client.storeTechnicalAnalysis(analysis)
       
       return analysis
     } catch (error) {

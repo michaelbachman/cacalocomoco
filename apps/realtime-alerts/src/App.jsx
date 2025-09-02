@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import ProfitLossTracker from './ProfitLossTracker'
 import DatabaseTest from './DatabaseTest'
 import HistoricalData from './HistoricalData'
-import ApiTest from './ApiTest'
+// ApiTest removed - replaced with secure Netlify Functions
 import GeminiTest from './gemini/components/GeminiTest.jsx'
 import PerformanceDashboard from './components/PerformanceDashboard'
 import { storePriceData, storeConnectionLog } from './db.js'
@@ -674,8 +674,7 @@ export default function App(){
       {/* Historical Data Component */}
       <HistoricalData onDataUpdate={setHistoricalData} />
 
-      {/* Alpha Vantage API Test Component */}
-      <ApiTest />
+      {/* Alpha Vantage API Test Component - Replaced with secure Netlify Functions */}
 
       {/* Gemini AI Integration Component */}
       {showGemini && <GeminiTest realTimePrices={prices} historicalData={historicalData} />}
