@@ -685,12 +685,24 @@
             // Override fetch to block external tracking
             window.fetch = function(...args) {
                 const url = args[0];
-                if (typeof url === 'string' && !url.startsWith(window.location.origin) && 
-                    !url.includes('api.kraken.com') && 
-                    !url.includes('fonts.googleapis.com') &&
-                    !url.includes('fonts.gstatic.com') &&
-                    !url.includes('netlify.app') &&
-                    !url.includes('netlify.com')) {
+                if (typeof url === 'string') {
+                    // Allow relative paths (starting with ./ or /)
+                    if (url.startsWith('./') || url.startsWith('/')) {
+                        return originalFetch.apply(this, args);
+                    }
+                    // Allow same origin
+                    if (url.startsWith(window.location.origin)) {
+                        return originalFetch.apply(this, args);
+                    }
+                    // Allow whitelisted domains
+                    if (url.includes('api.kraken.com') || 
+                        url.includes('fonts.googleapis.com') ||
+                        url.includes('fonts.gstatic.com') ||
+                        url.includes('netlify.app') ||
+                        url.includes('netlify.com')) {
+                        return originalFetch.apply(this, args);
+                    }
+                    // Block everything else
                     console.warn('Blocked external fetch request:', url);
                     return Promise.reject(new Error('External request blocked'));
                 }
@@ -700,12 +712,24 @@
             // Override XMLHttpRequest to block external tracking
             const originalOpen = XMLHttpRequest.prototype.open;
             XMLHttpRequest.prototype.open = function(method, url, ...args) {
-                if (typeof url === 'string' && !url.startsWith(window.location.origin) && 
-                    !url.includes('api.kraken.com') && 
-                    !url.includes('fonts.googleapis.com') &&
-                    !url.includes('fonts.gstatic.com') &&
-                    !url.includes('netlify.app') &&
-                    !url.includes('netlify.com')) {
+                if (typeof url === 'string') {
+                    // Allow relative paths (starting with ./ or /)
+                    if (url.startsWith('./') || url.startsWith('/')) {
+                        return originalOpen.apply(this, [method, url, ...args]);
+                    }
+                    // Allow same origin
+                    if (url.startsWith(window.location.origin)) {
+                        return originalOpen.apply(this, [method, url, ...args]);
+                    }
+                    // Allow whitelisted domains
+                    if (url.includes('api.kraken.com') || 
+                        url.includes('fonts.googleapis.com') ||
+                        url.includes('fonts.gstatic.com') ||
+                        url.includes('netlify.app') ||
+                        url.includes('netlify.com')) {
+                        return originalOpen.apply(this, [method, url, ...args]);
+                    }
+                    // Block everything else
                     console.warn('Blocked external XHR request:', url);
                     throw new Error('External request blocked');
                 }
