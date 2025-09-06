@@ -3199,7 +3199,7 @@ Respond with just the number (e.g., "75").`;
 
             // APEE calculation
             if (priceChange && priceChange.historicalPrice) {
-                indicators.apee = calculateAPEE(pair.id, price, priceChange.historicalPrice);
+                indicators.apee = calculateAPEEProfit(pair.id, price, priceChange.historicalPrice, '24h');
             }
 
             // VCI24 calculation
