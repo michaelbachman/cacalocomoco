@@ -1,86 +1,2883 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://esm.run; connect-src 'self' https://api.kraken.com wss://ws.kraken.com https://www.alphavantage.co https://generativelanguage.googleapis.com; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com https://esm.run; font-src 'self' https://fonts.gstatic.com">
-    <title>NKO</title>
-    
-    <!-- Resource hints for critical resources -->
-    <link rel="dns-prefetch" href="https://api.kraken.com">
-    <link rel="dns-prefetch" href="https://ws.kraken.com">
-    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
-    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
-    
-    <link rel="preconnect" href="https://api.kraken.com" crossorigin>
-    <link rel="preconnect" href="https://ws.kraken.com" crossorigin>
-    <link rel="preconnect" href="https://www.alphavantage.co" crossorigin>
-    <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossorigin>
-    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Optimized font loading with display=swap and font-display: swap -->
-    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Noto+Sans+Mono:wght@400;500;600&display=swap&v=2" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript>
-      <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Noto+Sans+Mono:wght@400;500;600&display=swap&v=2" rel="stylesheet">
-    </noscript>
-    <!-- Critical CSS inlined for faster render -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Cryptocurrency Prices - Kraken</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <!-- Restrictive CSP for security -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.kraken.com wss://ws.kraken.com; img-src 'self' data:; object-src 'none'; base-uri 'self';">
+    <meta http-equiv="Expires" content="0">
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Noto+Sans+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-      /* Critical CSS for above-the-fold content */
-      body { margin: 0; font-family: 'Noto Sans Mono', monospace; }
-      .wrap { padding: 20px; }
-      .hero { text-align: center; margin-bottom: 30px; }
-      .pairs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0; }
-      .pair-display { background: #f5f5f5; padding: 20px; border-radius: 8px; }
-      .val { font-size: 2em; font-weight: bold; color: #333; }
-      .label { font-size: 0.9em; color: #666; margin-top: 5px; }
-      .badge { padding: 5px 10px; border-radius: 4px; font-size: 0.8em; }
-      .badge.ok { background: #d4edda; color: #155724; }
-      .badge.warn { background: #fff3cd; color: #856404; }
-      .badge.error { background: #f8d7da; color: #721c24; }
-      .row { display: flex; gap: 10px; justify-content: center; margin: 20px 0; }
-      button { padding: 8px 16px; border: none; border-radius: 4px; background: #007bff; color: white; cursor: pointer; }
-      button:hover { background: #0056b3; }
-      button:disabled { background: #6c757d; cursor: not-allowed; }
-    </style>
-    
-    <!-- Non-critical CSS loaded asynchronously -->
-    <link rel="preload" href="/styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="/styles.css"></noscript>
-    
-    <script type="importmap">
-      {
-        "imports": {
-          "@material/web/": "https://unpkg.com/@material/web@2.4.0/"
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-      }
-    </script>
-    
-    <!-- Defer non-critical JavaScript -->
-    <script type="module" defer>
-      import('@material/web/all.js').then(() => {
-        import('@material/web/typography/md-typescale-styles.js').then(({styles: typescaleStyles}) => {
-          document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
-        });
-      });
-    </script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-    
-    <!-- Service Worker Registration for Performance -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-              console.log('SW registered: ', registration);
-            })
-            .catch((registrationError) => {
-              console.log('SW registration failed: ', registrationError);
+
+        body {
+            font-family: 'Noto Sans Mono', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #111112;
+            color: #ffffff;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            font-smooth: always;
+            text-rendering: optimizeLegibility;
+        }
+
+        .container {
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Logo styles */
+        .logo {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            font-family: 'Creepster', cursive;
+            font-size: 2.5rem;
+            font-weight: 400;
+            color: #ffffff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+            user-select: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logo:hover {
+            color: #00ff88;
+            text-shadow: 2px 2px 4px rgba(0, 255, 136, 0.3);
+        }
+
+
+
+        .status-indicator {
+            position: fixed;
+            bottom: 16px;
+            left: 16px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #888888;
+            z-index: 1000;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .status-badge {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #888888;
+            transition: all 0.3s ease;
+        }
+
+        /* Canvas for fireworks effect */
+        .fireworks-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* Explosion effect on hover */
+        .status-indicator:hover .status-badge {
+            transform: scale(0);
+            opacity: 0;
+        }
+
+        .status-badge.connected {
+            background-color: #00ff88;
+        }
+
+        .status-badge.connecting {
+            background-color: #ffaa00;
+        }
+
+        .status-badge.disconnected {
+            background-color: #ff4444;
+        }
+
+        .status-badge.error {
+            background-color: #888888;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 24px;
+        }
+
+        .card {
+            padding: 24px;
+        }
+
+        .pair-info {
+            text-align: left;
+            margin-bottom: 4px;
+        }
+
+        .pair-symbol {
+            font-family: 'Noto Sans Mono', monospace;
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-right: 4px;
+            line-height: 1.2;
+            -webkit-font-smoothing: antialiased;
+            font-rendering: geometricPrecision;
+        }
+
+        .pair-name {
+            font-family: 'Noto Sans Mono', monospace;
+            font-size: 14px;
+            color: #888888;
+            font-weight: 400;
+            line-height: 1.2;
+            -webkit-font-smoothing: antialiased;
+            font-rendering: geometricPrecision;
+        }
+
+        .price-section {
+            text-align: left;
+            margin-bottom: 4px;
+        }
+
+        .price {
+            font-family: 'Noto Sans Mono', monospace;
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #00ff88;
+            margin-bottom: 4px;
+            line-height: 1.2;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+        }
+
+        .no-data {
+            font-family: 'Noto Sans Mono', monospace;
+            font-size: 1.2rem;
+            color: #666666;
+            font-style: italic;
+        }
+
+        .price-change.positive {
+            color: #00ff88;
+        }
+        
+        .price-change.negative {
+            color: #ff4444;
+        }
+        
+        .price-change.neutral {
+            color: #888888;
+        }
+        
+        /* Main price color coding */
+        .price.positive {
+            color: #00ff88;
+        }
+        
+        .price.negative {
+            color: #ff4444;
+        }
+        
+        .price.neutral {
+            color: #888888;
+        }
+
+
+
+        /* Update timestamp - docked bottom right */
+        .update-timestamp {
+            position: fixed;
+            bottom: 16px;
+            right: 16px;
+            font-family: 'Noto Sans Mono', monospace;
+            font-size: 10px;
+            color: #888888;
+            z-index: 1000;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .loading {
+            font-family: 'Noto Sans Mono', monospace;
+            text-align: center;
+            font-size: 1.2rem;
+            color: #cccccc;
+            padding: 100px 20px;
+        }
+
+        /* Loading skeleton placeholders - exact dimensions */
+        .loading-skeleton {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .loading-skeleton .price {
+            width: 180px;
+            height: 35px;
+            background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+            background-size: 200% 100%;
+            animation: loading-shimmer 1.5s infinite;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .loading-skeleton .price-change {
+            width: 140px;
+            height: 20px;
+            background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+            background-size: 200% 100%;
+            animation: loading-shimmer 1.5s infinite;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+
+        .loading-skeleton .apee-profit {
+            width: 120px;
+            height: 18px;
+            background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+            background-size: 200% 100%;
+            animation: loading-shimmer 1.5s infinite;
+            border-radius: 4px;
+            margin-top: 4px;
+        }
+
+        .loading-skeleton .vci24-profit {
+            width: 140px;
+            height: 18px;
+            background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+            background-size: 200% 100%;
+            animation: loading-shimmer 1.5s infinite;
+            border-radius: 4px;
+            margin-top: 4px;
+        }
+
+        .loading-skeleton .tvi-profit {
+            width: 100px;
+            height: 18px;
+            background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+            background-size: 200% 100%;
+            animation: loading-shimmer 1.5s infinite;
+            border-radius: 4px;
+            margin-top: 4px;
+        }
+
+        .loading-skeleton .bsi-profit {
+            width: 120px;
+            height: 18px;
+            background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+            background-size: 200% 100%;
+            animation: loading-shimmer 1.5s infinite;
+            border-radius: 4px;
+            margin-top: 4px;
+        }
+
+        /* APEE Arrow Styling */
+        .apee-arrow {
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 4px;
+            width: 12px;
+            height: 12px;
+        }
+
+        /* VCI24 (Volume Change Indicator - 24 hours) Styles */
+        .vci24-profit {
+            font-size: 14px;
+            margin-top: 4px;
+            line-height: 1.2;
+        }
+
+        .vci24-arrow {
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 4px;
+            width: 12px;
+            height: 12px;
+        }
+
+        .vci24-profit.positive {
+            color: #00ff88; /* Green for volume increase */
+        }
+
+        .vci24-profit.negative {
+            color: #ff4444; /* Red for volume decrease */
+        }
+
+        .vci24-profit.neutral {
+            color: #888888; /* Grey for no change */
+        }
+
+        /* TVI (Token Value Indicator) Styles */
+        .tvi-profit {
+            font-size: 14px;
+            margin-top: 4px;
+            line-height: 1.2;
+        }
+
+        .tvi-arrow {
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 4px;
+            width: 12px;
+            height: 12px;
+        }
+
+        /* BSI (Buy Sell Indicator) Styling */
+        .bsi-display {
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 4px;
+            line-height: 1.2;
+        }
+
+        .bsi-display.positive {
+            color: #00ff88; /* Green for buy */
+        }
+
+        .bsi-display.negative {
+            color: #ff4444; /* Red for sell */
+        }
+
+        .bsi-display.neutral {
+            color: #888888; /* Grey for neutral */
+        }
+
+
+
+
+        /* CI (Confidence Indicator) Display Styling */
+        .ci-display {
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 4px;
+            line-height: 1.2;
+        }
+
+        .ci-display.positive {
+            color: #00ff88; /* Green for high confidence (76-100) */
+        }
+
+        .ci-display.neutral {
+            color: #ffaa00; /* Orange for medium confidence (51-75) */
+        }
+
+        .ci-display.negative {
+            color: #ff4444; /* Red for low confidence (1-50) */
+        }
+
+        .ci-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            margin-right: 4px;
+            margin-left: 3px;
+            vertical-align: middle;
+            margin-top: -1px;
+        }
+
+        .ci-dot.positive {
+            background-color: #00ff88; /* Green for high confidence */
+        }
+
+        .ci-dot.neutral {
+            background-color: #ffaa00; /* Orange for medium confidence */
+        }
+
+        .ci-dot.negative {
+            background-color: #ff4444; /* Red for low confidence */
+        }
+
+        .bsi-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            margin-right: 4px;
+            margin-left: 3px;
+            vertical-align: middle;
+            margin-top: -1px;
+        }
+
+        .bsi-dot.positive {
+            background-color: #00ff88; /* Green for buy */
+        }
+
+        .bsi-dot.negative {
+            background-color: #ff4444; /* Red for sell */
+            animation: bsi-pulse 1.5s infinite;
+        }
+
+        .bsi-dot.neutral {
+            background-color: #888888; /* Grey for neutral */
+        }
+
+        @keyframes bsi-pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .tvi-low {
+            color: #ff4444; /* Red for low value (0-4.0) */
+        }
+
+        .tvi-medium {
+            color: #ff8800; /* Orange for medium value (4.1-6.9) */
+        }
+
+        .tvi-high {
+            color: #44ff44; /* Green for high value (7.0-10.0) */
+        }
+
+        /* Disclaimer Headline Styles */
+        .disclaimer-headline {
+            grid-column: 1 / -1; /* Span full width of grid */
+            padding: 72px 24px 24px 24px; /* 48px top padding, 24px sides and bottom */
+            text-align: left;
+            font-size: 32px;
+            font-weight: bold;
+            line-height: 1.2;
+            color: white;
+            font-family: 'Noto Sans Mono', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            border: none;
+            background: none;
+        }
+
+        /* PPA (Pooled Profit Automation) Styles */
+        .ppa-display {
+            grid-column: 1 / -1; /* Span full width of grid */
+            padding: 24px; /* Match card padding for alignment */
+            text-align: left;
+            font-size: 32px;
+            font-weight: bold;
+            line-height: 1.4;
+            font-family: 'Noto Sans Mono', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            border: none;
+            background: none;
+        }
+
+        .ppa-arrow {
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 4px;
+            width: 14px;
+            height: 14px;
+        }
+
+        .ppa-display.positive {
+            color: #44ff44; /* Green for positive profit */
+        }
+
+        .ppa-display.negative {
+            color: #ff4444; /* Red for negative profit */
+        }
+
+        .ppa-display.neutral {
+            color: #888888; /* Grey for no change */
+        }
+
+        /* PPA Loading Skeleton */
+        .ppa-loading-skeleton {
+            width: 100%;
+            height: 45px; /* Match PPA line height */
+            background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+            background-size: 200% 100%;
+            animation: loading-shimmer 1.5s infinite;
+            border-radius: 4px;
+        }
+
+        .loading-skeleton .pair-info {
+            margin-bottom: 8px;
+        }
+
+        .loading-skeleton .pair-symbol {
+            width: 80px;
+            height: 18px;
+            background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+            background-size: 200% 100%;
+            animation: loading-shimmer 1.5s infinite;
+            border-radius: 4px;
+            margin-right: 8px;
+            display: inline-block;
+        }
+
+        .loading-skeleton .pair-name {
+            width: 100px;
+            height: 18px;
+            background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+            background-size: 200% 100%;
+            animation: loading-shimmer 1.5s infinite;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        @keyframes loading-shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* Price arrow styling */
+        .price-arrow {
+            display: inline-block;
+            vertical-align: middle;
+            transition: all 0.2s ease;
+            width: 14px;
+            height: 14px;
+        }
+
+        .price-arrow path {
+            fill: currentColor;
+        }
+
+        /* Reduce spacing between price change elements */
+        .price-change {
+            font-family: 'Noto Sans Mono', monospace;
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 2px;
+            text-align: left;
+            line-height: 1.2;
+            -webkit-font-smoothing: antialiased;
+            font-rendering: geometricPrecision;
+        }
+
+        .price-change .price-arrow {
+            margin-right: 0px;
+        }
+
+        /* APEE Profit Display Styling */
+        .apee-profit {
+            font-family: 'Noto Sans Mono', monospace;
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 2px;
+            text-align: left;
+            line-height: 1.2;
+            -webkit-font-smoothing: antialiased;
+            font-rendering: geometricPrecision;
+            opacity: 0.9;
+        }
+
+        .apee-profit.positive {
+            color: #00ff88;
+        }
+
+        .apee-profit.negative {
+            color: #ff4444;
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2rem;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            
+            .disclaimer-headline {
+                padding: 36px 20px 20px 20px; /* 16px top padding, 20px sides and bottom */
+                font-size: 28px; /* Slightly smaller on mobile */
+            }
+            
+            .ppa-display {
+                padding: 20px; /* Match mobile card padding */
+            }
+
+            /* Mobile logo positioning */
+            .logo {
+                position: static;
+                text-align: center;
+                margin-bottom: 20px;
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Logo -->
+    <div class="logo">NKO</div>
+
+    <div class="container">
+
+
+        <div class="grid" id="pricesGrid">
+            <!-- Loading skeletons will be inserted here by JavaScript -->
+        </div>
+
+        <!-- Update timestamp - docked bottom right -->
+        <div class="update-timestamp">
+            UPD: <span id="lastUpdated">—</span>
+        </div>
+    </div>
+
+    <!-- Status indicator dot -->
+    <div class="status-indicator">
+        <div class="status-badge" id="statusBadge"></div>
+    </div>
+
+    <!-- Fireworks canvas -->
+    <canvas class="fireworks-canvas" id="fireworksCanvas"></canvas>
+
+    <script type="module">
+        // Import API configuration and logger
+        import './src/config.js';
+        
+        
+        
+        // TVI Cache to prevent rapid recalculation
+        const tviCache = new Map();
+        const TVI_CACHE_DURATION = 300000; // 5 minutes cache
+        
+        // Trading pairs configuration
+        const tradingPairs = [
+            {
+                id: 'BTC/USD',
+                krakenPair: 'XBT/USD',
+                symbol: 'BTC/USD',
+                name: 'Bitcoin'
+            },
+            {
+                id: 'SOL/USD',
+                krakenPair: 'SOL/USD',
+                symbol: 'SOL/USD',
+                name: 'Solana'
+            },
+            {
+                id: 'ETH/USD',
+                krakenPair: 'ETH/USD',
+                symbol: 'ETH/USD',
+                name: 'Ethereum'
+            },
+            {
+                id: 'DOGE/USD',
+                krakenPair: 'XDG/USD',
+                symbol: 'DOGE/USD',
+                name: 'Dogecoin'
+            },
+            {
+                id: 'SHIB/USD',
+                krakenPair: 'SHIB/USD',
+                symbol: 'SHIB/USD',
+                name: 'Shiba Inu'
+            },
+            {
+                id: 'ADA/USD',
+                krakenPair: 'ADA/USD',
+                symbol: 'ADA/USD',
+                name: 'Cardano'
+            },
+            {
+                id: 'DOT/USD',
+                krakenPair: 'DOT/USD',
+                symbol: 'DOT/USD',
+                name: 'Polkadot'
+            },
+            {
+                id: 'MATIC/USD',
+                krakenPair: 'POL/USD',
+                symbol: 'MATIC/USD',
+                name: 'Polygon'
+            },
+            {
+                id: 'AVAX/USD',
+                krakenPair: 'AVAX/USD',
+                symbol: 'AVAX/USD',
+                name: 'Avalanche'
+            },
+            {
+                id: 'PUMP/USD',
+                krakenPair: 'PUMP/USD',
+                symbol: 'PUMP/USD',
+                name: 'Pump.fun'
+            },
+            {
+                id: 'PEPE/USD',
+                krakenPair: 'PEPE/USD',
+                symbol: 'PEPE/USD',
+                name: 'Pepe'
+            },
+            {
+                id: 'UNI/USD',
+                krakenPair: 'UNI/USD',
+                symbol: 'UNI/USD',
+                name: 'Uniswap'
+            }
+        ];
+
+        // WebSocket connection
+        let ws = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+        let reconnectTimeout = null;
+        let renderThrottleTimeout = null;
+
+        // Price data storage
+        const prices = {};
+        const previousPrices = {}; // Store previous prices for change calculation
+        const lastKnownPrices = {}; // Store last known prices for loading states
+        // Historical prices storage removed - now using real-time 48h data fetching
+        let connectionStatus = 'disconnected';
+        let isLoading = true; // Track loading state
+        
+        // APEE (Automated Profit Estimation Engine) Configuration
+        let APEE_INVESTMENT_AMOUNT = 10000; // Default fallback value - will be updated from Netlify function
+
+        // DOM elements
+        const statusBadge = document.getElementById('statusBadge');
+        const lastUpdatedSpan = document.getElementById('lastUpdated');
+        const pricesGrid = document.getElementById('pricesGrid');
+
+        // Utility functions
+        async function fetchAPEEConfiguration() {
+            try {
+                logger.log('🔧 Fetching APEE configuration from Netlify function...');
+                logger.log('🔧 Current APEE_INVESTMENT_AMOUNT before fetch:', APEE_INVESTMENT_AMOUNT);
+                const response = await fetch('/.netlify/functions/apee-config');
+                const data = await response.json();
+                
+                logger.log('🔧 APEE config response:', data);
+                
+                if (data.success) {
+                    APEE_INVESTMENT_AMOUNT = data.apeeInvestmentAmount;
+                    logger.log(`✅ APEE Investment Amount updated to: $${APEE_INVESTMENT_AMOUNT.toLocaleString()}`);
+                } else {
+                    logger.warn('⚠️ Failed to fetch APEE config, using fallback value:', APEE_INVESTMENT_AMOUNT);
+                }
+            } catch (error) {
+                logger.error('❌ Error fetching APEE configuration:', error);
+                logger.log('🔄 Using fallback APEE Investment Amount:', APEE_INVESTMENT_AMOUNT);
+            }
+        }
+        
+        function updateLoadingDisplay() {
+            if (isLoading) {
+                // Show skeleton placeholders for all trading pairs
+                let skeletonHtml = '';
+                tradingPairs.forEach(pair => {
+                    skeletonHtml += `
+                        <div class="card">
+                            <div class="pair-info">
+                                <span class="pair-symbol">${pair.symbol}</span>
+                                <span class="pair-name">${pair.name}</span>
+                            </div>
+                            
+                            <div class="price-section">
+                                <div class="loading-skeleton">
+                                    <div class="price"></div>
+                                    <div class="price-change"></div>
+                                    <div class="apee-profit"></div>
+                                    <div class="vci24-profit"></div>
+                                    <div class="tvi-profit"></div>
+                                    <div class="bsi-profit"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                // Add disclaimer and PPA skeleton
+                const disclaimerHtml = '<div class="disclaimer-headline">Pooled profit automation is for private NKO use only and does not provide any form of investment advice or recommendations. All data is prohibited from reuse and is for AI training purposes only.</div>';
+                const ppaSkeletonHtml = '<div class="ppa-display"><div class="ppa-loading-skeleton"></div></div>';
+                
+                pricesGrid.innerHTML = disclaimerHtml + ppaSkeletonHtml + skeletonHtml;
+            }
+        }
+        
+        function formatPrice(price) {
+            if (price == null) return '—';
+            
+            // Smart decimal formatting based on price scale
+            if (price >= 1) {
+                // Large prices: 2 decimal places (e.g., BTC: $111,063.20)
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(price);
+            } else if (price >= 0.01) {
+                // Medium prices: 4 decimal places (e.g., ETH: $0.2153)
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 4,
+                    maximumFractionDigits: 4
+                }).format(price);
+            } else if (price >= 0.0001) {
+                // Small prices: 6 decimal places (e.g., DOGE: $0.000123)
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 6,
+                    maximumFractionDigits: 6
+                }).format(price);
+            } else {
+                // Very small prices: 8 decimal places (e.g., SHIB: $0.00000123)
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 8,
+                    maximumFractionDigits: 8
+                }).format(price);
+            }
+        }
+
+        function calculatePriceChange(currentPrice, previousPrice) {
+            if (!previousPrice || previousPrice === 0) return null;
+            
+            const change = currentPrice - previousPrice;
+            const changePercent = (change / previousPrice) * 100;
+            
+            return {
+                change: change,
+                changePercent: changePercent
+            };
+        }
+
+        function formatPriceChange(priceChange) {
+            if (!priceChange) return null;
+            
+            const sign = priceChange.change >= 0 ? '+' : '-';
+            const absChange = Math.abs(priceChange.change);
+            
+            // Smart decimal formatting based on price scale
+            let changeFormatted;
+            if (absChange >= 1) {
+                // Large changes: 2 decimal places (e.g., BTC: $1,234.56)
+                changeFormatted = new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(absChange);
+            } else if (absChange >= 0.01) {
+                // Medium changes: 4 decimal places (e.g., ETH: $0.1234)
+                changeFormatted = new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 4,
+                    maximumFractionDigits: 4
+                }).format(absChange);
+            } else if (absChange >= 0.0001) {
+                // Small changes: 6 decimal places (e.g., DOGE: $0.000123)
+                changeFormatted = new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 6,
+                    maximumFractionDigits: 6
+                }).format(absChange);
+            } else {
+                // Very small changes: 8 decimal places (e.g., SHIB: $0.00000123)
+                changeFormatted = new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 8,
+                    maximumFractionDigits: 8
+                }).format(absChange);
+            }
+            
+            const percentFormatted = Math.abs(priceChange.changePercent).toFixed(2);
+            
+            // Create SVG arrow based on price change direction with rounded edges
+            const arrowSvg = priceChange.change >= 0 
+                ? '<svg class="price-arrow" width="14" height="14" viewBox="0 0 12 12" fill="currentColor"><path d="M6 2.5L9.5 7.5H2.5L6 2.5Z"/></svg>'
+                : '<svg class="price-arrow" width="14" height="14" viewBox="0 0 12 12" fill="currentColor"><path d="M6 9.5L2.5 4.5H9.5L6 9.5Z"/></svg>';
+            
+            const result = `${arrowSvg} ${sign}${changeFormatted} (${sign}${percentFormatted}%) 24hr`;
+            logger.log('Generated price change with arrow:', result);
+            return result;
+        }
+
+        // 48h historical data fetching removed - simplified to 24h APEE only
+
+        // APEE (Automated Profit Estimation Engine) Functions
+        function calculateAPEEProfit(pairId, currentPrice, previousDayPrice, timeframe = '24h') {
+            if (!currentPrice || !previousDayPrice) {
+                logger.log(`APEE: Missing data for ${pairId} - currentPrice: ${currentPrice}, previousDayPrice: ${previousDayPrice}`);
+                return null;
+            }
+            
+            // Calculate profit/loss using price change from historical price
+            const priceChangePercent = (currentPrice - previousDayPrice) / previousDayPrice;
+            const profitLoss = APEE_INVESTMENT_AMOUNT * priceChangePercent;
+            
+            // Calculate APEE return percentage (profit/loss as percentage of investment)
+            const apeeReturnPercent = (profitLoss / APEE_INVESTMENT_AMOUNT) * 100;
+            
+            // Debug logging for APEE math validation
+            logger.log(`APEE ${timeframe} Math Validation for ${pairId}:`);
+            logger.log(`  Investment Amount: $${APEE_INVESTMENT_AMOUNT}`);
+            logger.log(`  Current Price: $${currentPrice}`);
+            logger.log(`  Historical Price: $${previousDayPrice}`);
+            logger.log(`  Price Change: $${currentPrice - previousDayPrice}`);
+            logger.log(`  Price Change %: ${((currentPrice - previousDayPrice) / previousDayPrice * 100).toFixed(4)}%`);
+            logger.log(`  Calculated Profit: $${profitLoss.toFixed(2)}`);
+            logger.log(`  APEE Return %: ${apeeReturnPercent.toFixed(4)}% (Profit/Investment)`);
+            logger.log(`  Verification: $${profitLoss.toFixed(2)} / $${APEE_INVESTMENT_AMOUNT} = ${apeeReturnPercent.toFixed(4)}%`);
+            
+            logger.log(`APEE ${timeframe}: Profit calculated for ${pairId} - Historical: $${previousDayPrice}, Current: $${currentPrice}, Profit: $${profitLoss.toFixed(2)}, Return: ${apeeReturnPercent.toFixed(4)}%`);
+            
+            return {
+                profitLoss: profitLoss,
+                priceChangePercent: priceChangePercent * 100,
+                apeeReturnPercent: apeeReturnPercent,
+                historicalPrice: previousDayPrice,
+                timeAgo: timeframe === '48h' ? 48 : 24,
+                timeframe: timeframe
+            };
+        }
+
+        function formatAPEEProfit(apeeData) {
+            if (!apeeData) return null;
+            
+            const sign = apeeData.profitLoss >= 0 ? '+' : '-';
+            const absProfit = Math.abs(apeeData.profitLoss);
+            
+            // Smart decimal formatting for profit display - always show 2 decimal places for consistency
+            let profitFormatted = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(absProfit);
+            
+            // Format APEE return percentage (profit/loss as percentage of investment)
+            const percentSign = apeeData.apeeReturnPercent >= 0 ? '+' : '-';
+            const absPercent = Math.abs(apeeData.apeeReturnPercent);
+            const percentFormatted = absPercent.toFixed(2);
+            
+            // Add arrow indicator based on profit/loss
+            const arrowSvg = apeeData.profitLoss >= 0 
+                ? '<svg class="apee-arrow" width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M6 2L10 8H2L6 2Z"></path></svg>'
+                : '<svg class="apee-arrow" width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M6 10L2 4H10L6 10Z"></path></svg>';
+
+            // New naming format: (APEE24HR) or (APEE48HR)
+            const timeframeLabel = apeeData.timeframe === '48h' ? '48HR' : '24HR';
+            
+            return `${arrowSvg} ${sign}${profitFormatted} (${percentSign}${percentFormatted}%) (APEE${timeframeLabel})`;
+        }
+
+        // VCI24 (Volume Change Indicator - 24 hours) - Projected Volume Analysis
+        function calculateVCI24(pairId, tickerData = null) {
+            logger.log(`🚨 DEBUG: VCI24 CALCULATION STARTING FOR ${pairId} 🚨`);
+            if (!tickerData || !tickerData.v || !tickerData.v[0] || !tickerData.v[1]) {
+                logger.log(`  📊 VCI24 Analysis for ${pairId}: No volume data available`);
+                return { volumeChange: 0, volumeChangePercent: 0, volumeChangeUSD: 0 };
+            }
+
+            // v[0] = volume since midnight UTC (current day)
+            // v[1] = 24-hour rolling volume (previous 24 hours)
+            const currentDayVolume = parseFloat(tickerData.v[0]); // Volume since midnight
+            const previous24hVolume = parseFloat(tickerData.v[1]); // Previous 24h volume
+            const currentPrice = parseFloat(tickerData.c[0]);
+            
+            logger.log(`  📊 VCI24 Hourly Average Analysis for ${pairId}:`);
+            logger.log(`    Current Day Volume (v[0]): ${currentDayVolume.toLocaleString()}`);
+            logger.log(`    Previous 24h Volume (v[1]): ${previous24hVolume.toLocaleString()}`);
+            logger.log(`    Current Price: $${currentPrice.toLocaleString()}`);
+            
+            // Calculate current UTC time and hours since midnight
+            const now = new Date();
+            // Get UTC time components directly
+            const utcHours = now.getUTCHours();
+            const utcMinutes = now.getUTCMinutes();
+            const hoursSinceMidnight = utcHours + (utcMinutes / 60);
+            const hoursRemaining = 24 - hoursSinceMidnight;
+            
+            logger.log(`    Current UTC Time: ${now.toISOString()}`);
+            logger.log(`    Hours Since Midnight: ${hoursSinceMidnight.toFixed(2)}`);
+            logger.log(`    Hours Remaining: ${hoursRemaining.toFixed(2)}`);
+            
+            // Step 1: Calculate v[1] average per hour (previous 24h)
+            const v1HourlyAverage = previous24hVolume / 24;
+            logger.log(`    v[1] Hourly Average: ${v1HourlyAverage.toLocaleString()}`);
+            
+            // Step 2: Calculate v[0] average per hour (current day so far)
+            // Use precise time calculation for more accurate hourly averaging
+            const minHoursForCalculation = 0.25; // Minimum 15 minutes for meaningful calculation
+            const effectiveHoursSinceMidnight = Math.max(hoursSinceMidnight, minHoursForCalculation);
+            
+            // Calculate precise hourly average accounting for partial hours
+            const v0HourlyAverage = currentDayVolume / effectiveHoursSinceMidnight;
+            
+            // Additional precision: calculate what the volume would be if we had full hours
+            const fullHoursElapsed = Math.floor(hoursSinceMidnight);
+            const partialHourProgress = hoursSinceMidnight - fullHoursElapsed;
+            
+            logger.log(`    v[0] Hourly Average: ${v0HourlyAverage.toLocaleString()} (based on ${effectiveHoursSinceMidnight.toFixed(2)} hours)`);
+            logger.log(`    Time Breakdown: ${fullHoursElapsed} full hours + ${(partialHourProgress * 60).toFixed(0)} minutes`);
+            
+            // Calculate adjusted hourly rate for more accurate projection
+            let adjustedHourlyRate = v0HourlyAverage;
+            if (fullHoursElapsed > 0 && partialHourProgress > 0) {
+                // Weight the calculation: full hours get full weight, partial hour gets proportional weight
+                const fullHoursVolume = currentDayVolume * (fullHoursElapsed / hoursSinceMidnight);
+                const partialHourVolume = currentDayVolume * (partialHourProgress / hoursSinceMidnight);
+                
+                // Calculate rate based on full hours only, then adjust for partial hour
+                const fullHoursRate = fullHoursVolume / fullHoursElapsed;
+                const partialHourRate = partialHourVolume / partialHourProgress;
+                
+                // Weighted average of full hours rate and partial hour rate
+                adjustedHourlyRate = (fullHoursRate * fullHoursElapsed + partialHourRate * partialHourProgress) / hoursSinceMidnight;
+                
+                logger.log(`    Adjusted Hourly Rate: ${adjustedHourlyRate.toLocaleString()} (weighted for ${fullHoursElapsed} full + ${partialHourProgress.toFixed(2)} partial hours)`);
+            }
+            
+            // Step 3: Project total volume for current day using adjusted hourly rate
+            // Add remaining volume to current day volume (not replace it)
+            const remainingVolume = adjustedHourlyRate * hoursRemaining;
+            const projectedCurrentDayVolume = currentDayVolume + remainingVolume;
+            logger.log(`    Current Day Volume: ${currentDayVolume.toLocaleString()}`);
+            logger.log(`    Remaining Volume (${hoursRemaining.toFixed(2)}h × ${adjustedHourlyRate.toLocaleString()}/h): ${remainingVolume.toLocaleString()}`);
+            logger.log(`    Projected Total Day Volume: ${projectedCurrentDayVolume.toLocaleString()}`);
+            
+            // Step 4: Compare v[0] projected total vs v[1] total
+            const volumeChange = projectedCurrentDayVolume - previous24hVolume;
+            const volumeChangePercent = (volumeChange / previous24hVolume) * 100;
+            const volumeChangeUSD = volumeChange * currentPrice;
+            
+            // Additional validation: if the projected volume seems unrealistic, cap it
+            // More reasonable capping based on time of day and market conditions
+            const maxReasonableProjection = previous24hVolume * 5; // Max 5x previous day (allow for high volatility)
+            const minReasonableProjection = previous24hVolume * 0.05; // Min 5% of previous day (very low activity)
+            
+            // Time-based adjustment: early in the day, be more lenient with low projections
+            const timeBasedMinProjection = hoursSinceMidnight < 6 ? previous24hVolume * 0.02 : previous24hVolume * 0.05;
+            const effectiveMinProjection = Math.max(minReasonableProjection, timeBasedMinProjection);
+            
+            const cappedProjectedVolume = Math.max(effectiveMinProjection, Math.min(maxReasonableProjection, projectedCurrentDayVolume));
+            
+            logger.log(`🔍 CAPPING CHECK: projectedCurrentDayVolume=${projectedCurrentDayVolume.toLocaleString()}, maxReasonableProjection=${maxReasonableProjection.toLocaleString()}, effectiveMinProjection=${effectiveMinProjection.toLocaleString()}, cappedProjectedVolume=${cappedProjectedVolume.toLocaleString()}`);
+            
+            if (cappedProjectedVolume !== projectedCurrentDayVolume) {
+                const cappingReason = projectedCurrentDayVolume > maxReasonableProjection ? 'HIGH' : 'LOW';
+                logger.log(`    ⚠️  Projected volume capped from ${projectedCurrentDayVolume.toLocaleString()} to ${cappedProjectedVolume.toLocaleString()} (${cappingReason} projection)`);
+                logger.log(`    Capping Details: Max=${maxReasonableProjection.toLocaleString()}, Min=${effectiveMinProjection.toLocaleString()}, Time=${hoursSinceMidnight.toFixed(2)}h`);
+                
+                const cappedVolumeChange = cappedProjectedVolume - previous24hVolume;
+                const cappedVolumeChangePercent = (cappedVolumeChange / previous24hVolume) * 100;
+                const cappedVolumeChangeUSD = cappedVolumeChange * currentPrice;
+                
+                logger.log(`    Capped Volume Change: ${cappedVolumeChange > 0 ? '+' : ''}${cappedVolumeChange.toLocaleString()}`);
+                logger.log(`    Capped Volume Change %: ${cappedVolumeChangePercent > 0 ? '+' : ''}${cappedVolumeChangePercent.toFixed(2)}%`);
+                logger.log(`    Capped Volume Change USD: ${cappedVolumeChangeUSD > 0 ? '+' : ''}$${(cappedVolumeChangeUSD / 1000000).toFixed(2)}M`);
+                
+                return { volumeChange: cappedVolumeChange, volumeChangePercent: cappedVolumeChangePercent, volumeChangeUSD: cappedVolumeChangeUSD };
+            }
+            
+            logger.log(`    Volume Change: ${volumeChange > 0 ? '+' : ''}${volumeChange.toLocaleString()}`);
+            logger.log(`    Volume Change %: ${volumeChangePercent > 0 ? '+' : ''}${volumeChangePercent.toFixed(2)}%`);
+            logger.log(`    Volume Change USD: ${volumeChangeUSD > 0 ? '+' : ''}$${(volumeChangeUSD / 1000000).toFixed(2)}M`);
+            logger.log(`    Analysis: Current day trending ${volumeChange > 0 ? 'HIGHER' : 'LOWER'} than previous 24h average`);
+            
+            // BTC-specific summary
+            if (pairId === 'BTC/USD') {
+                logger.log('  🎯 BTC VCI24 SUMMARY (v2.1 - FIXED PROJECTION):');
+                logger.log(`    Data Sources: v[0]=${currentDayVolume.toLocaleString()} XBT, v[1]=${previous24hVolume.toLocaleString()} XBT`);
+                logger.log(`    Time Context: ${hoursSinceMidnight.toFixed(2)}h since midnight UTC`);
+                logger.log(`    Projection: ${projectedCurrentDayVolume.toLocaleString()} XBT (${adjustedHourlyRate.toLocaleString()} XBT/hour)`);
+                logger.log(`    Final Result: ${volumeChange > 0 ? '+' : ''}$${(volumeChangeUSD / 1000000).toFixed(2)}M (${volumeChangePercent > 0 ? '+' : ''}${volumeChangePercent.toFixed(2)}%)`);
+            }
+            
+            logger.log(`🔍 RETURNING VCI24 DATA: volumeChange=${volumeChange}, volumeChangePercent=${volumeChangePercent}, volumeChangeUSD=${volumeChangeUSD}`);
+            return { volumeChange, volumeChangePercent, volumeChangeUSD };
+        }
+
+        function formatVCI24(volumeChange, volumeChangePercent, volumeChangeUSD) {
+            const isPositive = volumeChange > 0;
+            const isNegative = volumeChange < 0;
+            
+            // Create arrow SVG
+            const arrowSvg = isPositive 
+                ? '<svg class="vci24-arrow" width="14" height="14" viewBox="0 0 12 12" fill="currentColor"><path d="M6 2.5L9.5 7.5H2.5L6 2.5Z"/></svg>'
+                : isNegative 
+                ? '<svg class="vci24-arrow" width="14" height="14" viewBox="0 0 12 12" fill="currentColor"><path d="M6 9.5L2.5 4.5H9.5L6 9.5Z"/></svg>'
+                : '<svg class="vci24-arrow" width="14" height="14" viewBox="0 0 12 12" fill="currentColor"><path d="M6 3L9 9H3L6 3Z"/></svg>';
+            
+            // Format volume change in millions with proper sign
+            const volumeChangeAbs = Math.abs(volumeChangeUSD);
+            const volumeChangeFormatted = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(volumeChangeAbs / 1000000) + 'M';
+            
+            // Add sign prefix
+            const volumeSign = volumeChangeUSD > 0 ? '+' : volumeChangeUSD < 0 ? '-' : '';
+            
+            // Format percentage
+            const percentFormatted = Math.abs(volumeChangePercent).toFixed(2);
+            const percentSign = volumeChangePercent > 0 ? '+' : volumeChangePercent < 0 ? '-' : '';
+            
+            return `${arrowSvg} ${volumeSign}${volumeChangeFormatted} (${percentSign}${percentFormatted}%) (VCI24)`;
+        }
+
+        // TVI (Token Value Indicator) Functions - Phase 1 Enhanced Technical
+        function calculateTVI(pairId, currentPrice, previousDayPrice, tickerData = null) {
+            if (!currentPrice || !previousDayPrice) {
+                logger.log(`TVI: Missing data for ${pairId} - currentPrice: ${currentPrice}, previousDayPrice: ${previousDayPrice}`);
+                return null;
+            }
+            
+            // Check cache first
+            const cacheKey = `${pairId}_${Math.floor(previousDayPrice * 1000)}`; // Use previousDayPrice as part of key
+            const cached = tviCache.get(cacheKey);
+            if (cached && (Date.now() - cached.timestamp) < TVI_CACHE_DURATION) {
+                logger.log(`🔄 TVI: Using cached data for ${pairId} (${Math.floor((Date.now() - cached.timestamp) / 1000)}s old)`);
+                return cached.data;
+            }
+            
+            logger.log(`🔄 Enhanced TVI Phase 1 Calculation for ${pairId}`);
+            logger.log(`📊 TVI Input Data:`);
+            logger.log(`  Current Price: $${currentPrice.toFixed(8)}`);
+            logger.log(`  Previous Day Price: $${previousDayPrice.toFixed(8)}`);
+            logger.log(`  Raw Price Change: $${(currentPrice - previousDayPrice).toFixed(8)}`);
+            logger.log(`  Price Change %: ${((currentPrice - previousDayPrice) / previousDayPrice * 100).toFixed(4)}%`);
+            logger.log(`  Ticker Data Available: ${tickerData ? 'Yes' : 'No'}`);
+            
+            if (tickerData) {
+                logger.log(`  📋 Kraken Ticker Data Fields:`);
+                logger.log(`    Price (c[0]): ${tickerData.c ? tickerData.c[0] : 'N/A'}`);
+                logger.log(`    24h Open (o[1]): ${tickerData.o ? tickerData.o[1] : 'N/A'}`);
+                logger.log(`    24h Volume (v[1]): ${tickerData.v ? tickerData.v[1] : 'N/A'}`);
+                logger.log(`    24h Price Range (p): ${tickerData.p ? JSON.stringify(tickerData.p) : 'N/A'}`);
+            }
+            
+            // 1. PRICE MOMENTUM (30% weight)
+            const priceChangePercent = (currentPrice - previousDayPrice) / previousDayPrice;
+            const priceMomentumScore = calculatePriceMomentum(priceChangePercent);
+            logger.log(`  📈 Price Momentum Score: ${priceMomentumScore.toFixed(2)}`);
+            
+            // 2. VOLUME STRENGTH (25% weight) - Using real Kraken data when available
+            const volumeStrengthScore = calculateVolumeStrength(pairId, currentPrice, previousDayPrice, tickerData);
+            logger.log(`  📊 Volume Strength Score: ${volumeStrengthScore.toFixed(2)}`);
+            
+            // 3. VOLATILITY FACTOR (20% weight)
+            const volatilityScore = calculateVolatilityFactor(pairId, currentPrice);
+            logger.log(`  📉 Volatility Score: ${volatilityScore.toFixed(2)}`);
+            
+            // 4. MARKET CORRELATION (25% weight) - How it moves vs. BTC
+            const marketCorrelationScore = calculateMarketCorrelation(pairId, priceChangePercent);
+            logger.log(`  🔗 Market Correlation Score: ${marketCorrelationScore.toFixed(2)}`);
+            
+            // Calculate weighted TVI score
+            const weightedTVI = (
+                (priceMomentumScore * 0.30) +
+                (volumeStrengthScore * 0.25) +
+                (volatilityScore * 0.20) +
+                (marketCorrelationScore * 0.25)
+            );
+            
+            // Ensure TVI stays within 1.0-10.0 range
+            const finalTVI = Math.max(1.0, Math.min(10.0, weightedTVI));
+            
+            logger.log(`📊 Enhanced TVI Summary for ${pairId}:`);
+            logger.log(`  Final TVI: ${finalTVI.toFixed(1)}`);
+            logger.log(`  Price Momentum: ${priceMomentumScore.toFixed(2)} (30%)`);
+            logger.log(`  Volume Strength: ${volumeStrengthScore.toFixed(2)} (25%)`);
+            logger.log(`  Volatility: ${volatilityScore.toFixed(2)} (20%)`);
+            logger.log(`  Market Correlation: ${marketCorrelationScore.toFixed(2)} (25%)`);
+            logger.log(`  Weighted Calculation: (${priceMomentumScore.toFixed(2)} × 0.30) + (${volumeStrengthScore.toFixed(2)} × 0.25) + (${volatilityScore.toFixed(2)} × 0.20) + (${marketCorrelationScore.toFixed(2)} × 0.25) = ${weightedTVI.toFixed(3)}`);
+            logger.log(`  Final TVI (capped 1.0-10.0): ${finalTVI.toFixed(1)}`);
+            
+            const result = {
+                value: finalTVI,
+                isIncreasing: priceChangePercent >= 0,
+                priceChangePercent: priceChangePercent * 100,
+                currentPrice: currentPrice,
+                previousPrice: previousDayPrice,
+                // Enhanced data for debugging
+                components: {
+                    priceMomentum: priceMomentumScore,
+                    volumeStrength: volumeStrengthScore,
+                    volatility: volatilityScore,
+                    marketCorrelation: marketCorrelationScore
+                }
+            };
+
+            // Cache the result
+            tviCache.set(cacheKey, {
+                data: result,
+                timestamp: Date.now()
             });
-        });
-      }
+
+            // Clean old cache entries
+            for (const [key, value] of tviCache.entries()) {
+                if (Date.now() - value.timestamp > TVI_CACHE_DURATION) {
+                    tviCache.delete(key);
+                }
+            }
+
+            return result;
+        }
+
+        // Enhanced Data Collection for 111DMA using JSON file
+        let piCycleData = null; // Store loaded Pi Cycle data
+        const historicalPriceData = {}; // Store historical prices for moving averages
+        
+        // Load Pi Cycle Top Indicator data from JSON file
+        async function loadPiCycleData() {
+            try {
+                const response = await fetch('./pi-cycle-top-indicator.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                piCycleData = await response.json();
+                logger.log('✅ Pi Cycle data loaded successfully');
+                logger.log(`📊 Loaded ${piCycleData['pi-cycle-top-indicator'].length} Pi Cycle data points`);
+                logger.log(`📊 Loaded ${piCycleData['market-price'].length} market price data points`);
+                return piCycleData;
+            } catch (error) {
+                logger.error('❌ Failed to load Pi Cycle data:', error);
+                return null;
+            }
+        }
+        
+        // Initialize historical data storage for a trading pair
+        function initializeHistoricalData(pairId) {
+            if (!historicalPriceData[pairId]) {
+                historicalPriceData[pairId] = {
+                    prices: [],
+                    timestamps: [],
+                    maxDays: 400 // Store up to 400 days for 350DMA calculation
+                };
+            }
+        }
+        
+        // Store daily price data for moving average calculations
+        function storeDailyPrice(pairId, price, timestamp = Date.now()) {
+            initializeHistoricalData(pairId);
+            
+            const data = historicalPriceData[pairId];
+            const today = new Date(timestamp);
+            const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+            
+            // Check if we already have data for today
+            const existingIndex = data.timestamps.findIndex(ts => {
+                const existingDate = new Date(ts).toISOString().split('T')[0];
+                return existingDate === todayString;
+            });
+            
+            if (existingIndex >= 0) {
+                // Update existing data for today
+                data.prices[existingIndex] = price;
+                data.timestamps[existingIndex] = timestamp;
+            } else {
+                // Add new data
+                data.prices.push(price);
+                data.timestamps.push(timestamp);
+            }
+            
+            // Keep only the most recent 400 days
+            if (data.prices.length > 400) {
+                data.prices = data.prices.slice(-400);
+                data.timestamps = data.timestamps.slice(-400);
+            }
+            
+            logger.log(`📊 Stored daily price for ${pairId}: $${price.toFixed(2)} (${data.prices.length} days stored)`);
+        }
+        
+        // Calculate Simple Moving Average
+        function calculateSMA(prices, period) {
+            if (prices.length < period) {
+                return null; // Not enough data
+            }
+            
+            const recentPrices = prices.slice(-period);
+            const sum = recentPrices.reduce((acc, price) => acc + price, 0);
+            return sum / period;
+        }
+        
+        // Calculate 111DMA and 350DMA for Pi Cycle Top Indicator using JSON data
+        function calculatePiCycleIndicators(pairId) {
+            // Only use JSON data for BTC/USD (Bitcoin)
+            if (pairId === 'BTC/USD' && piCycleData && piCycleData['market-price'] && piCycleData['market-price'].length > 0) {
+                const marketPrices = piCycleData['market-price'];
+                const currentTime = Date.now();
+                
+                // Get the most recent price from JSON data
+                const latestPriceData = marketPrices[marketPrices.length - 1];
+                const currentPrice = latestPriceData.y;
+                
+                // Extract prices for moving average calculations (last 400 days)
+                const prices = marketPrices.slice(-400).map(item => item.y);
+                
+                if (prices.length < 111) {
+                    logger.log(`⚠️ Insufficient JSON data for ${pairId}: ${prices.length} days (need 111 for 111DMA)`);
+                    return null;
+                }
+                
+                const sma111 = calculateSMA(prices, 111);
+                const sma350 = prices.length >= 350 ? calculateSMA(prices, 350) : null;
+                const sma350x2 = sma350 ? sma350 * 2 : null;
+                
+                const indicators = {
+                    sma111: sma111,
+                    sma350: sma350,
+                    sma350x2: sma350x2,
+                    currentPrice: currentPrice,
+                    dataPoints: prices.length,
+                    piCycleSignal: null,
+                    dataSource: 'JSON'
+                };
+                
+                // Calculate Pi Cycle Top signal
+                if (sma111 && sma350x2) {
+                    indicators.piCycleSignal = sma111 > sma350x2 ? 'SELL' : 'BUY';
+                    indicators.signalStrength = Math.abs((sma111 - sma350x2) / sma350x2) * 100;
+                }
+                
+                logger.log(`🎯 Pi Cycle Indicators for ${pairId} (from JSON):`);
+                logger.log(`  Current Price: $${indicators.currentPrice.toFixed(2)}`);
+                logger.log(`  111DMA: $${sma111 ? sma111.toFixed(2) : 'N/A'}`);
+                logger.log(`  350DMA: $${sma350 ? sma350.toFixed(2) : 'N/A'}`);
+                logger.log(`  350DMA x2: $${sma350x2 ? sma350x2.toFixed(2) : 'N/A'}`);
+                logger.log(`  Pi Cycle Signal: ${indicators.piCycleSignal || 'N/A'}`);
+                logger.log(`  Signal Strength: ${indicators.signalStrength ? indicators.signalStrength.toFixed(2) + '%' : 'N/A'}`);
+                logger.log(`  Data Source: JSON (${prices.length} days)`);
+                
+                return indicators;
+            }
+            
+            // Fallback to real-time data collection
+            initializeHistoricalData(pairId);
+            const data = historicalPriceData[pairId];
+            
+            if (data.prices.length < 111) {
+                logger.log(`⚠️ Insufficient real-time data for ${pairId}: ${data.prices.length} days (need 111 for 111DMA)`);
+                return null;
+            }
+            
+            const sma111 = calculateSMA(data.prices, 111);
+            const sma350 = data.prices.length >= 350 ? calculateSMA(data.prices, 350) : null;
+            const sma350x2 = sma350 ? sma350 * 2 : null;
+            
+            const indicators = {
+                sma111: sma111,
+                sma350: sma350,
+                sma350x2: sma350x2,
+                currentPrice: data.prices[data.prices.length - 1],
+                dataPoints: data.prices.length,
+                piCycleSignal: null,
+                dataSource: 'Real-time'
+            };
+            
+            // Calculate Pi Cycle Top signal
+            if (sma111 && sma350x2) {
+                indicators.piCycleSignal = sma111 > sma350x2 ? 'SELL' : 'BUY';
+                indicators.signalStrength = Math.abs((sma111 - sma350x2) / sma350x2) * 100;
+            }
+            
+            logger.log(`🎯 Pi Cycle Indicators for ${pairId} (from real-time):`);
+            logger.log(`  Current Price: $${indicators.currentPrice.toFixed(2)}`);
+            logger.log(`  111DMA: $${sma111 ? sma111.toFixed(2) : 'N/A'}`);
+            logger.log(`  350DMA: $${sma350 ? sma350.toFixed(2) : 'N/A'}`);
+            logger.log(`  350DMA x2: $${sma350x2 ? sma350x2.toFixed(2) : 'N/A'}`);
+            logger.log(`  Pi Cycle Signal: ${indicators.piCycleSignal || 'N/A'}`);
+            logger.log(`  Signal Strength: ${indicators.signalStrength ? indicators.signalStrength.toFixed(2) + '%' : 'N/A'}`);
+            logger.log(`  Data Source: Real-time (${data.prices.length} days)`);
+            
+            return indicators;
+        }
+
+        // BSI (Buy Sell Indicator) Functions with Current Market Priority
+        function calculateBSI(pairId, currentPrice, previousDayPrice, tickerData = null, tviScore = null, apeeData = null) {
+            if (!currentPrice || !previousDayPrice) {
+                logger.log(`BSI: Missing data for ${pairId} - currentPrice: ${currentPrice}, previousDayPrice: ${previousDayPrice}`);
+                return null;
+            }
+            
+            logger.log(`🔄 BSI Calculation for ${pairId}`);
+            logger.log(`📊 BSI Input Data:`);
+            logger.log(`  Current Price: $${currentPrice.toFixed(8)}`);
+            logger.log(`  Previous Day Price: $${previousDayPrice.toFixed(8)}`);
+            logger.log(`  Price Change %: ${((currentPrice - previousDayPrice) / previousDayPrice * 100).toFixed(4)}%`);
+            logger.log(`  TVI Score: ${tviScore || 'N/A'}`);
+            logger.log(`  APEE Data: ${apeeData ? `$${apeeData.profitLoss.toFixed(2)}` : 'N/A'}`);
+            
+            // Store current price for historical data collection
+            storeDailyPrice(pairId, currentPrice);
+            
+            // Get Pi Cycle indicators (111DMA and 350DMA) - for reference only
+            const piCycleData = calculatePiCycleIndicators(pairId);
+            
+            // Calculate price momentum
+            const priceChangePercent = (currentPrice - previousDayPrice) / previousDayPrice;
+            
+            // PRIORITY 1: Current Market Conditions (Most Important)
+            let baseScore = 5.0; // Start neutral
+            
+            // Current price momentum analysis (PRIMARY FACTOR) - Crypto-optimized thresholds
+            if (priceChangePercent > 0.15) { // >15% increase - potential overextension (crypto-adjusted)
+                baseScore = 2.0; // SELL signal - market may be overextended
+                logger.log(`🚨 BSI: Extreme upward momentum detected - potential overextension`);
+            } else if (priceChangePercent > 0.10) { // 10-15% increase - caution zone (crypto-adjusted)
+                baseScore = 3.5; // Weak SELL - approaching overextension
+                logger.log(`⚠️ BSI: High momentum - approaching overextension zone`);
+            } else if (priceChangePercent > 0.05) { // 5-10% increase - strong bullish (crypto-adjusted)
+                baseScore = 7.5; // Strong BUY - healthy crypto momentum
+                logger.log(`📈 BSI: Strong bullish momentum - healthy crypto trend`);
+            } else if (priceChangePercent > 0.02) { // 2-5% increase - moderate bullish
+                baseScore = 7.0; // Strong BUY - sustainable growth
+                logger.log(`✅ BSI: Moderate bullish momentum - sustainable growth`);
+            } else if (priceChangePercent > 0) { // 0-2% increase - neutral positive
+                baseScore = 6.5; // BUY - slight positive momentum
+                logger.log(`📊 BSI: Slight positive momentum`);
+            } else if (priceChangePercent > -0.02) { // 0 to -2% decrease - neutral
+                baseScore = 5.0; // Neutral - minimal movement
+                logger.log(`➖ BSI: Neutral - minimal price movement`);
+            } else if (priceChangePercent > -0.05) { // -2 to -5% decrease - mild bearish
+                baseScore = 4.0; // Weak SELL - mild bearish trend
+                logger.log(`📉 BSI: Mild bearish trend`);
+            } else if (priceChangePercent > -0.08) { // -5 to -8% decrease - moderate bearish
+                baseScore = 3.0; // SELL - moderate bearish trend
+                logger.log(`🔻 BSI: Moderate bearish trend`);
+            } else { // >-8% decrease - strong bearish
+                baseScore = 2.0; // Strong SELL - significant decline
+                logger.log(`🔴 BSI: Strong bearish trend - significant decline`);
+            }
+            
+            // PRIORITY 2: TVI Integration (Volume Strength) - Enhanced weight for crypto
+            if (tviScore !== null) {
+                if (tviScore < 3.0) {
+                    baseScore = Math.max(1.0, baseScore - 2.5); // Very weak volume - strong SELL
+                    logger.log(`📊 BSI: Very weak TVI (${tviScore}) - strong volume weakness`);
+                } else if (tviScore < 5.0) {
+                    baseScore = Math.max(1.0, baseScore - 1.5); // Weak volume - reduce score
+                    logger.log(`📊 BSI: Weak TVI (${tviScore}) - volume weakness`);
+                } else if (tviScore > 8.0) {
+                    baseScore = Math.min(10.0, baseScore + 1.5); // Very strong volume - significant boost
+                    logger.log(`📊 BSI: Very strong TVI (${tviScore}) - exceptional volume strength`);
+                } else if (tviScore > 6.0) {
+                    baseScore = Math.min(10.0, baseScore + 1.0); // Strong volume - good boost
+                    logger.log(`📊 BSI: Strong TVI (${tviScore}) - volume strength`);
+                }
+            }
+            
+            // PRIORITY 3: APEE Integration (Profit/Loss Analysis) - Enhanced weight for crypto
+            if (apeeData && apeeData.profitLoss !== null) {
+                const apeePercent = apeeData.profitLossPercent || 0;
+                if (apeePercent < -5.0) {
+                    baseScore = Math.max(1.0, baseScore - 2.0); // Significant loss - strong SELL
+                    logger.log(`📊 BSI: Significant APEE loss (${apeePercent.toFixed(2)}%) - strong negative signal`);
+                } else if (apeePercent < -2.0) {
+                    baseScore = Math.max(1.0, baseScore - 1.5); // Loss - reduce score
+                    logger.log(`📊 BSI: APEE loss (${apeePercent.toFixed(2)}%) - negative signal`);
+                } else if (apeePercent > 5.0) {
+                    baseScore = Math.min(10.0, baseScore + 1.5); // Strong profit - significant boost
+                    logger.log(`📊 BSI: Strong APEE profit (${apeePercent.toFixed(2)}%) - strong positive signal`);
+                } else if (apeePercent > 2.0) {
+                    baseScore = Math.min(10.0, baseScore + 1.0); // Good profit - good boost
+                    logger.log(`📊 BSI: Good APEE profit (${apeePercent.toFixed(2)}%) - positive signal`);
+                }
+            }
+            
+            // PRIORITY 4: Crypto Market Dynamics - Volume-Price Momentum Alignment
+            if (tviScore !== null && priceChangePercent > 0) {
+                // Strong volume + strong price momentum = very bullish in crypto
+                if (tviScore > 7.0 && priceChangePercent > 0.03) {
+                    baseScore = Math.min(10.0, baseScore + 1.0);
+                    logger.log(`🚀 BSI: Strong volume-price alignment - crypto momentum boost`);
+                }
+                // Weak volume + strong price = potential weakness
+                else if (tviScore < 4.0 && priceChangePercent > 0.05) {
+                    baseScore = Math.max(1.0, baseScore - 1.0);
+                    logger.log(`⚠️ BSI: Weak volume with strong price - potential weakness`);
+                }
+            }
+            
+            // PRIORITY 5: Pi Cycle Data (Historical Context - Lower Priority)
+            if (piCycleData && piCycleData.piCycleSignal) {
+                // Only use Pi Cycle as a modifier, not primary signal
+                if (piCycleData.piCycleSignal === 'SELL' && baseScore > 5.0) {
+                    baseScore = Math.max(1.0, baseScore - 0.5); // Reduced impact for crypto markets
+                    logger.log(`📊 BSI: Pi Cycle SELL signal - slight reduction`);
+                } else if (piCycleData.piCycleSignal === 'BUY' && baseScore < 5.0) {
+                    baseScore = Math.min(10.0, baseScore + 0.5); // Slight boost to SELL signals when Pi Cycle says BUY
+                    logger.log(`📊 BSI: Pi Cycle BUY signal - slight boost`);
+                }
+            }
+            
+            // Additional volume-based adjustments
+            if (tickerData && tickerData.v) {
+                const volume24h = tickerData.v[1] || 0;
+                const volumeToday = tickerData.v[0] || 0;
+                
+                // High volume with price increase = potential distribution (SELL signal)
+                if (priceChangePercent > 0.03 && volumeToday > volume24h * 1.5) {
+                    baseScore = Math.max(1.0, baseScore - 1.5);
+                    logger.log(`📊 BSI: High volume with price increase - potential distribution signal`);
+                }
+                // Low volume with price increase = weak rally (reduce BUY signal)
+                else if (priceChangePercent > 0.02 && volumeToday < volume24h * 0.7) {
+                    baseScore = Math.max(1.0, baseScore - 0.5);
+                    logger.log(`📊 BSI: Low volume with price increase - weak rally signal`);
+                }
+            }
+            
+            // Ensure BSI stays within 1.0-10.0 range
+            const finalBSI = Math.max(1.0, Math.min(10.0, baseScore));
+            
+            // Determine buy/sell recommendation
+            const isBuy = finalBSI > 5.0;
+            const recommendation = isBuy ? 'BUY' : 'SELL';
+            
+            logger.log(`📊 BSI Summary for ${pairId}:`);
+            logger.log(`  Final BSI: ${finalBSI.toFixed(1)}`);
+            logger.log(`  Recommendation: ${recommendation}`);
+            logger.log(`  Price Change: ${(priceChangePercent * 100).toFixed(2)}%`);
+            logger.log(`  Logic: ${piCycleData ? 'True 111DMA Pi Cycle Analysis' : 'Momentum fallback analysis'}`);
+            
+            return {
+                value: finalBSI,
+                recommendation: recommendation,
+                isBuy: isBuy,
+                priceChangePercent: priceChangePercent * 100,
+                currentPrice: currentPrice,
+                previousPrice: previousDayPrice,
+                logic: piCycleData ? 'True 111DMA Pi Cycle Analysis' : 'Momentum fallback analysis',
+                piCycleData: piCycleData,
+                historicalDataPoints: piCycleData ? piCycleData.dataPoints : 0
+            };
+        }
+
+        // Enhanced TVI Component Functions
+        function calculatePriceMomentum(priceChangePercent) {
+            // Convert price change to 1-10 scale with enhanced logic
+            // Strong positive momentum: 7.0-10.0
+            // Moderate positive: 5.5-7.0
+            // Slight positive: 5.0-5.5
+            // Neutral: 4.5-5.5
+            // Slight negative: 4.0-4.5
+            // Moderate negative: 2.5-4.0
+            // Strong negative: 1.0-2.5
+            
+            const changePercent = priceChangePercent * 100;
+            let momentumScore;
+            let momentumCategory;
+            
+            if (changePercent >= 5.0) {
+                momentumScore = 9.0;
+                momentumCategory = 'Strong Bullish';
+            } else if (changePercent >= 2.0) {
+                momentumScore = 7.5;
+                momentumCategory = 'Moderate Bullish';
+            } else if (changePercent >= 0.5) {
+                momentumScore = 6.0;
+                momentumCategory = 'Slight Bullish';
+            } else if (changePercent >= -0.5) {
+                momentumScore = 5.0;
+                momentumCategory = 'Neutral';
+            } else if (changePercent >= -2.0) {
+                momentumScore = 4.0;
+                momentumCategory = 'Slight Bearish';
+            } else if (changePercent >= -5.0) {
+                momentumScore = 2.5;
+                momentumCategory = 'Moderate Bearish';
+            } else {
+                momentumScore = 1.0;
+                momentumCategory = 'Strong Bearish';
+            }
+            
+            logger.log(`    📈 Price Momentum Analysis:`);
+            logger.log(`      Raw Change %: ${changePercent.toFixed(4)}%`);
+            logger.log(`      Category: ${momentumCategory}`);
+            logger.log(`      Score: ${momentumScore.toFixed(1)}`);
+            
+            return momentumScore;
+        }
+
+        function calculateVolumeStrength(pairId, currentPrice, previousDayPrice, tickerData = null) {
+            // Enhanced volume analysis using real Kraken data when available
+            // This will be improved when we add volume correlation data
+            
+            // If we have ticker data with volume information, use it
+            if (tickerData && tickerData.v && tickerData.v[1]) {
+                const currentVolume24h = parseFloat(tickerData.v[1]);
+                const priceChangePercent = Math.abs((currentPrice - previousDayPrice) / previousDayPrice);
+                
+                // Get previous volume data for comparison
+                const previousVolumeData = previousPrices[pairId]?.volumeData;
+                let volumeScore = 5.0; // Base score
+                
+                logger.log(`  📊 Volume Analysis for ${pairId}:`);
+                logger.log(`    Current 24h Volume: ${currentVolume24h.toLocaleString()}`);
+                
+                if (previousVolumeData && previousVolumeData.volume24h) {
+                    // Calculate volume change over time
+                    const volumeChange = currentVolume24h - previousVolumeData.volume24h;
+                    const volumeChangePercent = (volumeChange / previousVolumeData.volume24h) * 100;
+                    
+                    logger.log(`    Previous Volume: ${previousVolumeData.volume24h.toLocaleString()}`);
+                    logger.log(`    Volume Change: ${volumeChange > 0 ? '+' : ''}${volumeChange.toLocaleString()}`);
+                    logger.log(`    Volume Change %: ${volumeChangePercent > 0 ? '+' : ''}${volumeChangePercent.toFixed(2)}%`);
+                    
+                    // Volume trend analysis (higher volume growth = stronger score)
+                    if (volumeChangePercent >= 50) { // Volume increased by 50%+
+                        volumeScore += 2.5;
+                        logger.log(`    Volume Trend: Strong Increase (+${volumeChangePercent.toFixed(1)}%)`);
+                    } else if (volumeChangePercent >= 25) { // Volume increased by 25%+
+                        volumeScore += 1.5;
+                        logger.log(`    Volume Trend: Moderate Increase (+${volumeChangePercent.toFixed(1)}%)`);
+                    } else if (volumeChangePercent >= 10) { // Volume increased by 10%+
+                        volumeScore += 1.0;
+                        logger.log(`    Volume Trend: Slight Increase (+${volumeChangePercent.toFixed(1)}%)`);
+                    } else if (volumeChangePercent >= -10) { // Volume stable (-10% to +10%)
+                        volumeScore += 0.5;
+                        logger.log(`    Volume Trend: Stable (${volumeChangePercent.toFixed(1)}%)`);
+                    } else if (volumeChangePercent >= -25) { // Volume decreased by 10-25%
+                        volumeScore -= 0.5;
+                        logger.log(`    Volume Trend: Slight Decrease (${volumeChangePercent.toFixed(1)}%)`);
+                    } else { // Volume decreased by 25%+
+                        volumeScore -= 1.0;
+                        logger.log(`    Volume Trend: Strong Decrease (${volumeChangePercent.toFixed(1)}%)`);
+                    }
+                } else {
+                    logger.log(`    Previous Volume: Not available (first data point)`);
+                    logger.log(`    Volume Trend: Initial baseline`);
+                    
+                    // Use absolute volume thresholds for first-time analysis
+                    if (currentVolume24h > 1000000000) { // Very high volume (>1B)
+                        volumeScore += 2.0;
+                    } else if (currentVolume24h > 100000000) { // High volume (>100M)
+                        volumeScore += 1.5;
+                    } else if (currentVolume24h > 10000000) { // Medium volume (>10M)
+                        volumeScore += 1.0;
+                    } else if (currentVolume24h < 1000000) { // Low volume (<1M)
+                        volumeScore -= 0.5;
+                    }
+                }
+                
+                // Price movement correlation (higher price movement with volume = stronger)
+                if (priceChangePercent >= 0.05) {
+                    volumeScore += 1.5;
+                    logger.log(`    Price-Volume Correlation: Strong (${(priceChangePercent * 100).toFixed(2)}% price change)`);
+                } else if (priceChangePercent >= 0.03) {
+                    volumeScore += 1.0;
+                    logger.log(`    Price-Volume Correlation: Moderate (${(priceChangePercent * 100).toFixed(2)}% price change)`);
+                } else if (priceChangePercent >= 0.01) {
+                    volumeScore += 0.5;
+                    logger.log(`    Price-Volume Correlation: Light (${(priceChangePercent * 100).toFixed(2)}% price change)`);
+                } else {
+                    logger.log(`    Price-Volume Correlation: Minimal (${(priceChangePercent * 100).toFixed(2)}% price change)`);
+                }
+                
+                logger.log(`    Final Volume Score: ${volumeScore.toFixed(2)}`);
+                
+                return Math.max(1.0, Math.min(10.0, volumeScore));
+            }
+            
+            // Fallback: Using price volatility as a proxy for volume strength
+            // Higher volatility often correlates with higher volume
+            const priceChangePercent = Math.abs((currentPrice - previousDayPrice) / previousDayPrice);
+            
+            logger.log(`  📊 Volume Analysis for ${pairId} (Proxy Method):`);
+            logger.log(`    Using price volatility as volume proxy: ${(priceChangePercent * 100).toFixed(2)}%`);
+            
+            if (priceChangePercent >= 0.05) return 8.0;  // High volatility = high volume
+            if (priceChangePercent >= 0.03) return 6.5;  // Medium volatility
+            if (priceChangePercent >= 0.01) return 5.0;  // Low volatility
+            return 3.0;                                  // Very low volatility
+        }
+
+        function calculateVolatilityFactor(pairId, currentPrice) {
+            // Calculate volatility based on recent price movements
+            // Lower volatility = higher score (more stable investment)
+            
+            // For now, using a simplified volatility calculation
+            // This will be enhanced with historical price data
+            
+            // Simulate volatility based on current market conditions
+            // In a real implementation, this would use standard deviation of recent prices
+            const baseVolatility = 5.0;
+            
+            // Add some randomness to simulate real market conditions
+            const volatilityAdjustment = (Math.random() - 0.5) * 2;
+            const volatilityScore = baseVolatility + volatilityAdjustment;
+            
+            return Math.max(1.0, Math.min(10.0, volatilityScore));
+        }
+
+        function calculateMarketCorrelation(pairId, priceChangePercent) {
+            // Calculate how this token moves relative to overall market sentiment
+            // Higher correlation with positive market moves = higher score
+            
+            const changePercent = priceChangePercent * 100;
+            let correlationScore;
+            let correlationCategory;
+            
+            // For now, using a simplified correlation model
+            // In Phase 2, this will compare to BTC and overall market movements
+            
+            if (changePercent >= 3.0) {
+                correlationScore = 9.0;
+                correlationCategory = 'Strong Positive Correlation';
+            } else if (changePercent >= 1.0) {
+                correlationScore = 7.0;
+                correlationCategory = 'Positive Correlation';
+            } else if (changePercent >= -1.0) {
+                correlationScore = 5.0;
+                correlationCategory = 'Neutral Correlation';
+            } else if (changePercent >= -3.0) {
+                correlationScore = 3.0;
+                correlationCategory = 'Negative Correlation';
+            } else {
+                correlationScore = 1.0;
+                correlationCategory = 'Strong Negative Correlation';
+            }
+            
+            logger.log(`    🔗 Market Correlation Analysis:`);
+            logger.log(`      Price Change %: ${changePercent.toFixed(4)}%`);
+            logger.log(`      Category: ${correlationCategory}`);
+            logger.log(`      Score: ${correlationScore.toFixed(1)}`);
+            
+            return correlationScore;
+        }
+
+        function formatTVI(tviData) {
+            if (!tviData) return null;
+            
+            const tviValue = tviData.value.toFixed(1);
+            
+            // Determine color based on TVI value
+            let colorClass = '';
+            if (tviValue <= 4.0) {
+                colorClass = 'tvi-low'; // Red
+            } else if (tviValue <= 6.9) {
+                colorClass = 'tvi-medium'; // Orange
+            } else {
+                colorClass = 'tvi-high'; // Green
+            }
+            
+            // Add arrow based on direction
+            const arrowSvg = tviData.isIncreasing 
+                ? '<svg class="tvi-arrow" width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M6 2L10 8H2L6 2Z"></path></svg>'
+                : '<svg class="tvi-arrow" width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M6 10L2 4H10L6 10Z"></path></svg>';
+            
+            return {
+                html: `${arrowSvg} ${tviValue} (TVI)`,
+                colorClass: colorClass
+            };
+        }
+
+        function formatBSI(bsiData) {
+            if (!bsiData) return null;
+            
+            const bsiValue = bsiData.value.toFixed(1);
+            const recommendation = bsiData.recommendation;
+            const isBuy = bsiData.isBuy;
+            
+            // Determine color class based on buy/sell recommendation
+            let colorClass = '';
+            let dotClass = '';
+            
+            if (isBuy) {
+                colorClass = 'positive'; // Green for buy
+                dotClass = 'positive';
+            } else {
+                colorClass = 'negative'; // Red for sell
+                dotClass = 'negative';
+            }
+            
+            // Create dot element with appropriate class
+            const dotHtml = `<span class="bsi-dot ${dotClass}"></span>`;
+            
+            return {
+                html: `${dotHtml} ${recommendation} (${bsiValue})(BSI)`,
+                colorClass: colorClass,
+                isBuy: isBuy,
+                value: bsiValue
+            };
+        }
+
+
+
+
+        // OpenAI Investment Confidence Indicator Functions
+        let openaiCache = new Map(); // Cache for 6-hour intervals
+        let openaiLastUpdate = 0;
+        let openaiCalculating = new Set(); // Track which pairs are currently calculating
+        let openaiTokenUsage = []; // Track token usage history
+
+        async function calculateOpenAI(pairId, currentPrice, previousDayPrice, tickerData, tviData, bsiData, apeeData, vci24Data) {
+            // Only calculate for BTC/USD for now
+            if (pairId !== 'BTC/USD') {
+                return null;
+            }
+
+            const now = Date.now();
+            const cacheKey = `${pairId}_${Math.floor(now / 21600000)}`; // 6-hour cache key
+            
+            // Check if we have cached data for this 6-hour period
+            if (openaiCache.has(cacheKey)) {
+                const cachedData = openaiCache.get(cacheKey);
+                logger.log(`🔄 OpenAI: Using cached data for ${pairId}`);
+                if (cachedData.tokenUsage) {
+                    logger.log(`💾 OpenAI: Cached token usage for ${pairId}: ${cachedData.tokenUsage.total_tokens} tokens ($${(cachedData.tokenUsage.total_tokens * 0.00015 / 1000).toFixed(6)})`);
+                }
+                return cachedData;
+            }
+
+            // API key is now handled server-side
+
+            try {
+                const startTime = performance.now();
+                openaiCalculating.add(pairId);
+                logger.log(`🤖 OpenAI: Starting confidence calculation for ${pairId}`);
+                logger.log(`📊 OpenAI Input Data for ${pairId}:`);
+                logger.log(`  Current Price: $${currentPrice ? currentPrice.toFixed(2) : 'N/A'}`);
+                logger.log(`  Previous Day Price: $${previousDayPrice ? previousDayPrice.toFixed(2) : 'N/A'}`);
+                logger.log(`  Price Change: ${currentPrice && previousDayPrice ? ((currentPrice - previousDayPrice) / previousDayPrice * 100).toFixed(2) : 'N/A'}%`);
+                logger.log(`  TVI Score: ${tviData && tviData.value ? tviData.value.toFixed(1) : 'N/A'}`);
+                logger.log(`  BSI Score: ${bsiData && bsiData.value !== undefined ? bsiData.value.toFixed(1) : 'N/A'} (${bsiData && bsiData.recommendation ? bsiData.recommendation : 'N/A'})`);
+                logger.log(`  APEE Profit: $${apeeData && apeeData.profitLoss !== undefined ? apeeData.profitLoss.toFixed(2) : 'N/A'} (${apeeData && apeeData.profitLossPercent !== undefined ? apeeData.profitLossPercent.toFixed(2) : 'N/A'}%)`);
+                logger.log(`  VCI24 Volume Change: $${vci24Data && vci24Data.volumeChangeUSD !== undefined ? (vci24Data.volumeChangeUSD / 1000000).toFixed(2) : 'N/A'}M (${vci24Data && vci24Data.volumeChangePercent !== undefined ? vci24Data.volumeChangePercent.toFixed(2) : 'N/A'}%)`);
+                logger.log(`  Volume 24h: $${tickerData && tickerData.v && tickerData.v[1] !== undefined ? (tickerData.v[1] / 1000000).toFixed(2) : 'N/A'}M`);
+                
+                // Prepare analysis data for OpenAI
+                const analysisData = {
+                    currentPrice: currentPrice ? currentPrice.toFixed(2) : 'N/A',
+                    previousDayPrice: previousDayPrice ? previousDayPrice.toFixed(2) : 'N/A',
+                    priceChangePercent: currentPrice && previousDayPrice ? ((currentPrice - previousDayPrice) / previousDayPrice * 100).toFixed(2) : 'N/A',
+                    tviScore: tviData && tviData.value ? tviData.value.toFixed(1) : 'N/A',
+                    bsiScore: bsiData && bsiData.value !== undefined ? bsiData.value.toFixed(1) : 'N/A',
+                    bsiRecommendation: bsiData && bsiData.recommendation ? bsiData.recommendation : 'N/A',
+                    apeeProfit: apeeData && apeeData.profitLoss !== undefined ? apeeData.profitLoss.toFixed(2) : 'N/A',
+                    apeeProfitPercent: apeeData && apeeData.profitLossPercent !== undefined ? apeeData.profitLossPercent.toFixed(2) : 'N/A',
+                    vci24VolumeChange: vci24Data && vci24Data.volumeChangeUSD !== undefined ? (vci24Data.volumeChangeUSD / 1000000).toFixed(2) : 'N/A',
+                    vci24VolumeChangePercent: vci24Data && vci24Data.volumeChangePercent !== undefined ? vci24Data.volumeChangePercent.toFixed(2) : 'N/A',
+                    volume24h: tickerData && tickerData.v && tickerData.v[1] !== undefined ? (tickerData.v[1] / 1000000).toFixed(2) : 'N/A'
+                };
+
+                const prompt = `You are an expert cryptocurrency investment analyst. Analyze the following Bitcoin (BTC/USD) market data and provide a confidence score from 1-100 for investment potential.
+
+Market Data:
+- Current Price: $${analysisData.currentPrice}
+- Previous Day Price: $${analysisData.previousDayPrice}
+- Price Change: ${analysisData.priceChangePercent}%
+- TVI Score: ${analysisData.tviScore}/10 (Token Value Indicator)
+- BSI Score: ${analysisData.bsiScore}/10 (${analysisData.bsiRecommendation} - Buy/Sell Indicator)
+- APEE Profit: $${analysisData.apeeProfit} (${analysisData.apeeProfitPercent}%)
+- VCI24 Volume Change: $${analysisData.vci24VolumeChange}M (${analysisData.vci24VolumeChangePercent}%)
+- 24h Volume: $${analysisData.volume24h}M
+
+Please provide ONLY a single number from 1-100 representing your investment confidence score. Consider:
+- Price momentum and trends
+- Volume analysis
+- Technical indicators (TVI, BSI, APEE, VCI24)
+- Market sentiment and risk factors
+
+Respond with just the number (e.g., "75").`;
+
+                logger.log(`📝 OpenAI: Sending prompt to GPT-4o`);
+                logger.log(`📝 OpenAI: Prompt length: ${prompt.length} characters`);
+
+                const apiStartTime = performance.now();
+                
+                const response = await fetch('/.netlify/functions/openai-proxy', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        model: 'gpt-4o-mini'
+                    })
+                });
+
+                const apiEndTime = performance.now();
+                const apiDuration = apiEndTime - apiStartTime;
+                logger.log(`⏱️ OpenAI: API call completed in ${apiDuration.toFixed(2)}ms for ${pairId}`);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    logger.error(`❌ OpenAI: OpenAI API error for ${pairId} - Status: ${response.status}`);
+                    logger.error(`❌ OpenAI: Error details:`, errorText);
+                    throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+                }
+
+                const data = await response.json();
+                logger.log(`📥 OpenAI: Raw response for ${pairId}:`, data);
+
+                // Log detailed token usage information
+                if (data.usage) {
+                    logger.log(`🔢 OpenAI: Token Usage for ${pairId}:`);
+                    logger.log(`  📝 Prompt tokens: ${data.usage.prompt_tokens}`);
+                    logger.log(`  💬 Completion tokens: ${data.usage.completion_tokens}`);
+                    logger.log(`  📊 Total tokens: ${data.usage.total_tokens}`);
+                    logger.log(`  💰 Estimated cost: $${(data.usage.total_tokens * 0.00015 / 1000).toFixed(6)} (gpt-4o-mini pricing)`);
+                } else {
+                    logger.warn(`⚠️ OpenAI: No token usage data in response for ${pairId}`);
+                }
+
+                const confidenceText = data.data.text.trim();
+                logger.log(`📊 OpenAI: Extracted confidence text: "${confidenceText}"`);
+
+                if (!confidenceText) {
+                    logger.error(`❌ OpenAI: No confidence score in response for ${pairId}`);
+                    return null;
+                }
+
+                // Extract number from response
+                const confidenceMatch = confidenceText.match(/\b(\d{1,3})\b/);
+                if (!confidenceMatch) {
+                    logger.error(`❌ OpenAI: Could not extract confidence score from "${confidenceText}" for ${pairId}`);
+                    return null;
+                }
+
+                const confidence = parseInt(confidenceMatch[1]);
+                if (confidence < 1 || confidence > 100) {
+                    logger.error(`❌ OpenAI: Confidence score out of range: ${confidence} for ${pairId}`);
+                    return null;
+                }
+
+                logger.log(`🎯 OpenAI: Parsed confidence score: ${confidence} for ${pairId}`);
+
+                const result = {
+                    value: confidence,
+                    timestamp: now,
+                    source: 'OpenAI GPT-4o-mini',
+                    analysisData: analysisData,
+                    tokenUsage: data.usage || null
+                };
+
+                // Cache the result
+                openaiCache.set(cacheKey, result);
+                logger.log(`💾 OpenAI: Cached result for ${pairId} with key: ${cacheKey}`);
+                
+                // Track token usage for analytics
+                if (data.usage) {
+                    openaiTokenUsage.push({
+                        timestamp: now,
+                        pairId: pairId,
+                        usage: data.usage,
+                        cost: data.usage.total_tokens * 0.00015 / 1000
+                    });
+                    logger.log(`📊 OpenAI: Token usage tracked for ${pairId} - Total API calls: ${openaiTokenUsage.length}`);
+                }
+
+                const totalDuration = performance.now() - startTime;
+                let confidenceLevel = '';
+                if (confidence < 50) {
+                    confidenceLevel = 'LOW (Red)';
+                } else if (confidence <= 75) {
+                    confidenceLevel = 'MEDIUM (Orange)';
+                } else {
+                    confidenceLevel = 'HIGH (Green)';
+                }
+                
+                openaiCalculating.delete(pairId);
+                logger.log(`✅ OpenAI: SUCCESS for ${pairId}`);
+                logger.log(`🎯 OpenAI: Final confidence score: ${confidence} (${confidenceLevel})`);
+                logger.log(`⏱️ OpenAI: Total processing time: ${totalDuration.toFixed(2)}ms`);
+                logger.log(`📊 OpenAI: Cache size: ${openaiCache.size} entries`);
+                return result;
+
+            } catch (error) {
+                openaiCalculating.delete(pairId);
+                if (error.name === 'AbortError') {
+                    logger.warn(`⏰ OpenAI: Request timeout for ${pairId} - API call took too long`);
+                } else if (error.message.includes('fetch')) {
+                    logger.warn(`🌐 OpenAI: Network error for ${pairId} - check internet connection`);
+                } else {
+                    logger.error(`❌ OpenAI Error for ${pairId}:`, error);
+                }
+                return null;
+            }
+        }
+
+        function formatOpenAI(openaiData) {
+            if (!openaiData) return null;
+            
+            const confidence = openaiData.value;
+            // Extract just the model name, removing "OpenAI" prefix if present
+            let modelName = openaiData.source || 'gpt-4o-mini';
+            if (modelName.includes('OpenAI')) {
+                modelName = modelName.replace('OpenAI', '').trim();
+            }
+            
+            // Determine color class based on confidence level
+            let colorClass = '';
+            if (confidence < 50) {
+                colorClass = 'negative'; // Red for low confidence
+            } else if (confidence <= 75) {
+                colorClass = 'neutral'; // Orange for medium confidence
+            } else {
+                colorClass = 'positive'; // Green for high confidence
+            }
+            
+            // Create dot element with appropriate class
+            const dotHtml = `<span class="ci-dot ${colorClass}"></span>`;
+            
+            return {
+                html: `${dotHtml} ${confidence} (${modelName})(CI)`,
+                colorClass: colorClass,
+                value: confidence
+            };
+        }
+
+        // Function to display token usage summary
+        function displayOpenAITokenUsage() {
+            if (openaiTokenUsage.length === 0) {
+                logger.log('📊 OpenAI: No token usage data available yet');
+                return;
+            }
+            
+            const totalTokens = openaiTokenUsage.reduce((sum, entry) => sum + entry.usage.total_tokens, 0);
+            const totalCost = openaiTokenUsage.reduce((sum, entry) => sum + entry.cost, 0);
+            const avgTokens = totalTokens / openaiTokenUsage.length;
+            
+            logger.log('📊 OpenAI Token Usage Summary:');
+            logger.log(`  🔢 Total API calls: ${openaiTokenUsage.length}`);
+            logger.log(`  📝 Total tokens used: ${totalTokens.toLocaleString()}`);
+            logger.log(`  💰 Total estimated cost: $${totalCost.toFixed(6)}`);
+            logger.log(`  📊 Average tokens per call: ${avgTokens.toFixed(1)}`);
+            logger.log(`  ⏰ Cache efficiency: ${openaiCache.size} cached results (6-hour intervals)`);
+            
+            // Show breakdown by call
+            logger.log('📋 Token Usage Breakdown:');
+            openaiTokenUsage.forEach((entry, index) => {
+                const date = new Date(entry.timestamp).toLocaleString();
+                logger.log(`  ${index + 1}. ${entry.pairId} - ${entry.usage.total_tokens} tokens ($${entry.cost.toFixed(6)}) - ${date}`);
+            });
+        }
+
+        // PPA (Pooled Profit Automation) Functions
+        function calculatePPA() {
+            let totalProfit = 0;
+            let totalInvestment = 0;
+            let pairsWithData = 0;
+            
+            logger.log('🔄 Calculating PPA (Pooled Profit Automation)...');
+            
+            for (const pair of tradingPairs) {
+                const price = prices[pair.id];
+                const priceChange = previousPrices[pair.id];
+                
+                if (price && priceChange && priceChange.historicalPrice) {
+                    // Calculate APEE profit for this pair
+                    const apeeData = calculateAPEEProfit(pair.id, price, priceChange.historicalPrice, '24h');
+                    if (apeeData) {
+                        totalProfit += apeeData.profitLoss;
+                        totalInvestment += APEE_INVESTMENT_AMOUNT;
+                        pairsWithData++;
+                        
+                        logger.log(`  ${pair.id}: Profit = $${apeeData.profitLoss.toFixed(2)}, Investment = $${APEE_INVESTMENT_AMOUNT}`);
+                    }
+                }
+            }
+            
+            // Calculate total percentage change
+            const totalPercentChange = totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0;
+            
+            logger.log(`📊 PPA Summary:`);
+            logger.log(`  Total Profit: $${totalProfit.toFixed(2)}`);
+            logger.log(`  Total Investment: $${totalInvestment.toFixed(2)}`);
+            logger.log(`  Total % Change: ${totalPercentChange.toFixed(2)}%`);
+            logger.log(`  Pairs with data: ${pairsWithData}/${tradingPairs.length}`);
+            
+            return {
+                totalProfit: totalProfit,
+                totalInvestment: totalInvestment,
+                totalPercentChange: totalPercentChange,
+                pairsWithData: pairsWithData,
+                totalPairs: tradingPairs.length
+            };
+        }
+
+        function formatPPA(ppaData) {
+            if (!ppaData || ppaData.pairsWithData === 0) {
+                return null;
+            }
+            
+            const sign = ppaData.totalProfit >= 0 ? '+' : '-';
+            const absProfit = Math.abs(ppaData.totalProfit);
+            
+            // Format total profit with currency
+            const profitFormatted = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(absProfit);
+            
+            // Format percentage
+            const percentSign = ppaData.totalPercentChange >= 0 ? '+' : '-';
+            const absPercent = Math.abs(ppaData.totalPercentChange);
+            const percentFormatted = absPercent.toFixed(2);
+            
+            // Format total investment in millions
+            const investmentInMillions = ppaData.totalInvestment / 1000000;
+            const investmentFormatted = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(investmentInMillions) + 'M';
+            
+            // Add arrow indicator based on total profit
+            const arrowSvg = ppaData.totalProfit >= 0 
+                ? '<svg class="ppa-arrow" width="14" height="14" viewBox="0 0 12 12" fill="currentColor"><path d="M6 2.5L9.5 7.5H2.5L6 2.5Z"/></svg>'
+                : '<svg class="ppa-arrow" width="14" height="14" viewBox="0 0 12 12" fill="currentColor"><path d="M6 9.5L2.5 4.5H9.5L6 9.5Z"/></svg>';
+            
+            return {
+                html: `PPA ${arrowSvg} ${sign}${profitFormatted} (${percentSign}${percentFormatted}%) (IIP ${investmentFormatted})`,
+                isPositive: ppaData.totalProfit >= 0,
+                isNegative: ppaData.totalProfit < 0
+            };
+        }
+
+        function updateStatus(status) {
+            connectionStatus = status;
+            statusBadge.className = 'status-badge';
+            
+            switch (status) {
+                case 'connected':
+                    statusBadge.classList.add('connected');
+                    break;
+                case 'connecting':
+                    statusBadge.classList.add('connecting');
+                    break;
+                case 'disconnected':
+                    statusBadge.classList.add('disconnected');
+                    break;
+                case 'error':
+                    statusBadge.classList.add('error');
+                    break;
+            }
+        }
+
+        function updateLastUpdated() {
+            const now = new Date();
+            const utcTime = now.toLocaleTimeString('en-US', { 
+                timeZone: 'UTC',
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            lastUpdatedSpan.textContent = `${utcTime} UTC`;
+        }
+
+        function initializeLoadingState() {
+            isLoading = true;
+            updateLoadingDisplay(); // Show skeleton placeholders immediately
+        }
+
+        async function renderPrices() {
+            let htmlContent = '';
+            
+            for (const pair of tradingPairs) {
+                const price = prices[pair.id];
+                const priceChange = previousPrices[pair.id];
+                const lastKnownPrice = lastKnownPrices[pair.id];
+                const hasPrice = price != null;
+                const hasLastKnownPrice = lastKnownPrice != null;
+
+                // If loading and no current price, show skeleton
+                if (isLoading && !hasPrice) {
+                    htmlContent += `
+                        <div class="card">
+                            <div class="pair-info">
+                                <span class="pair-symbol">${pair.symbol}</span>
+                                <span class="pair-name">${pair.name}</span>
+                            </div>
+                            
+                            <div class="price-section">
+                                <div class="loading-skeleton">
+                                    <div class="price"></div>
+                                    <div class="price-change"></div>
+                                    <div class="apee-profit"></div>
+                                    <div class="vci24-profit"></div>
+                                    <div class="tvi-profit"></div>
+                                    <div class="bsi-profit"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    continue; // Skip to next pair
+                }
+
+                // If we have a current price, use it; otherwise use last known price
+                const displayPrice = hasPrice ? price : (hasLastKnownPrice ? lastKnownPrice : null);
+                const displayPriceChange = hasPrice ? priceChange : null;
+                
+                
+                // Calculate APEE profit for 24h timeframe only
+                const apeeProfit24h = hasPrice && displayPriceChange && displayPriceChange.historicalPrice ? calculateAPEEProfit(pair.id, price, displayPriceChange.historicalPrice, '24h') : null;
+                
+                // Calculate TVI (Token Value Indicator) with enhanced data
+                const tviData = hasPrice && displayPriceChange && displayPriceChange.historicalPrice ? 
+                    calculateTVI(pair.id, price, displayPriceChange.historicalPrice, displayPriceChange.tickerData) : null;
+                const tviFormatted = tviData ? formatTVI(tviData) : null;
+                
+                // Calculate BSI (Buy Sell Indicator) with TVI and APEE integration
+                const volumeStrength = tviData ? tviData.components.volumeStrength : null;
+                const bsiData = hasPrice && displayPriceChange && displayPriceChange.historicalPrice ? 
+                    calculateBSI(pair.id, price, displayPriceChange.historicalPrice, displayPriceChange.tickerData, volumeStrength, apeeProfit24h) : null;
+                const bsiFormatted = bsiData ? formatBSI(bsiData) : null;
+                
+                // Calculate OpenAI Investment Confidence Indicator - Background processing
+                let openaiData = null;
+                let openaiFormatted = null;
+                
+                // Check for cached OpenAI data first (non-blocking)
+                if (pair.id === 'BTC/USD') {
+                    const now = Date.now();
+                    const cacheKey = `${pair.id}_${Math.floor(now / 21600000)}`;
+                    if (openaiCache.has(cacheKey)) {
+                        openaiData = openaiCache.get(cacheKey);
+                        openaiFormatted = formatOpenAI(openaiData);
+                        logger.log(`🔄 OpenAI: Using cached data for ${pair.id} - Score: ${openaiData.value} (${Math.floor((now - openaiData.timestamp) / 1000)}s old)`);
+                    } else {
+                        logger.log(`🆕 OpenAI: No cached data for ${pair.id} - will trigger background calculation`);
+                    }
+                }
+                
+                // Start background OpenAI calculation (non-blocking)
+                if (hasPrice && displayPriceChange && displayPriceChange.historicalPrice && pair.id === 'BTC/USD') {
+                    logger.log(`🚀 OpenAI: Triggering background calculation for ${pair.id}`);
+                    // Use setTimeout to ensure this runs after the current render cycle
+                    setTimeout(() => {
+                        logger.log(`⏰ OpenAI: Starting background calculation for ${pair.id}`);
+                        calculateOpenAI(pair.id, price, displayPriceChange.historicalPrice, displayPriceChange.tickerData, tviData, bsiData, apeeProfit24h, vci24Data)
+                            .then(result => {
+                                if (result) {
+                                    logger.log(`✅ OpenAI: Background calculation completed for ${pair.id} - Score: ${result.value}`);
+                                    // Update the cache
+                                    const now = Date.now();
+                                    const cacheKey = `${pair.id}_${Math.floor(now / 21600000)}`;
+                                    openaiCache.set(cacheKey, result);
+                                    
+                                    // Always re-render to show the new OpenAI result
+                                    logger.log(`🔄 OpenAI: Triggering UI update for ${pair.id} with new score: ${result.value}`);
+                                    renderPrices();
+                                } else {
+                                    logger.log(`⚠️ OpenAI: Background calculation returned null for ${pair.id}`);
+                                }
+                            })
+                            .catch(error => {
+                                logger.error(`❌ OpenAI: Background calculation error for ${pair.id}:`, error);
+                            });
+                    }, 0);
+                }
+                
+                // Log APEE calculation status
+                if (apeeProfit24h) {
+                    logger.log(`🎯 APEE 24h Calculation in renderPrices for ${pair.id}: Profit = $${apeeProfit24h.profitLoss.toFixed(2)} (Historical: $${displayPriceChange.historicalPrice})`);
+                } else {
+                    logger.log(`⚠️ APEE Calculation skipped for ${pair.id}: hasPrice=${hasPrice}, hasChange=${!!displayPriceChange}, hasHistorical=${!!displayPriceChange?.historicalPrice}`);
+                }
+                
+                // Calculate VCI24 (Volume Change Indicator - 24 hours)
+                let vci24Data = null;
+                let vci24Formatted = null;
+                
+                if (hasPrice && displayPriceChange && displayPriceChange.tickerData) {
+                    logger.log(`🔄 VCI24 Calculation in renderPrices for ${pair.id}:`);
+                    vci24Data = calculateVCI24(pair.id, displayPriceChange.tickerData);
+                    if (vci24Data) {
+                        logger.log(`🔍 RECEIVED VCI24 DATA: volumeChange=${vci24Data.volumeChange}, volumeChangePercent=${vci24Data.volumeChangePercent}, volumeChangeUSD=${vci24Data.volumeChangeUSD}`);
+                        vci24Formatted = formatVCI24(vci24Data.volumeChange, vci24Data.volumeChangePercent, vci24Data.volumeChangeUSD);
+                        logger.log(`🎯 VCI24 Calculation in renderPrices for ${pair.id}: Volume Change = ${vci24Data.volumeChangeUSD > 0 ? '+' : ''}$${(vci24Data.volumeChangeUSD / 1000000).toFixed(2)}M (${vci24Data.volumeChangePercent > 0 ? '+' : ''}${vci24Data.volumeChangePercent.toFixed(2)}%)`);
+                    } else {
+                        logger.log(`⚠️ VCI24 Calculation skipped for ${pair.id}: No volume change data available`);
+                    }
+                } else {
+                    logger.log(`⚠️ VCI24 Calculation skipped for ${pair.id}: hasPrice=${hasPrice}, hasTickerData=${!!(displayPriceChange && displayPriceChange.tickerData)}`);
+                }
+
+                // Log TVI calculation status
+                if (tviData) {
+                    logger.log(`🎯 TVI Calculation in renderPrices for ${pair.id}: Value = ${tviData.value.toFixed(1)} (Direction: ${tviData.isIncreasing ? 'Increasing' : 'Decreasing'})`);
+                } else {
+                    logger.log(`⚠️ TVI Calculation skipped for ${pair.id}: hasPrice=${hasPrice}, hasChange=${!!displayPriceChange}, hasHistorical=${!!displayPriceChange?.historicalPrice}`);
+                }
+                
+                htmlContent += `
+                    <div class="card">
+                        <div class="pair-info">
+                            <span class="pair-symbol">${pair.symbol}</span>
+                            <span class="pair-name">${pair.name}</span>
+                        </div>
+                        
+                        <div class="price-section">
+                            <div class="price ${displayPriceChange && displayPriceChange.change !== undefined ? (displayPriceChange.change > 0 ? 'positive' : displayPriceChange.change < 0 ? 'negative' : 'neutral') : ''}">
+                                ${displayPrice != null ? formatPrice(displayPrice) : '—'}
+                            </div>
+                            ${displayPriceChange && displayPriceChange.change !== undefined ? `<div class="price-change ${displayPriceChange.change > 0 ? 'positive' : displayPriceChange.change < 0 ? 'negative' : 'neutral'}">${formatPriceChange(displayPriceChange)}</div>` : ''}
+                            ${apeeProfit24h ? `<div class="apee-profit ${apeeProfit24h.profitLoss >= 0 ? 'positive' : 'negative'}">${formatAPEEProfit(apeeProfit24h)}</div>` : ''}
+                            ${vci24Formatted ? `<div class="vci24-profit ${vci24Data && vci24Data.volumeChange > 0 ? 'positive' : vci24Data && vci24Data.volumeChange < 0 ? 'negative' : 'neutral'}">${vci24Formatted}</div>` : ''}
+                            ${tviFormatted ? `<div class="tvi-profit ${tviFormatted.colorClass}">${tviFormatted.html}</div>` : ''}
+                            ${bsiFormatted ? `<div class="bsi-display ${bsiFormatted.colorClass}">${bsiFormatted.html}</div>` : ''}
+                            ${openaiFormatted ? `<div class="ci-display ${openaiFormatted.colorClass}">${openaiFormatted.html}</div>` : (pair.id === 'BTC/USD' ? (openaiCalculating.has(pair.id) ? '<div class="ci-display neutral"><span class="ci-dot neutral"></span> Calculating... (gpt-4o-mini)(CI)</div>' : '<div class="ci-display neutral"><span class="ci-dot neutral"></span> N/A (gpt-4o-mini)(CI)</div>') : '')}
+                            ${displayPrice == null ? '<div class="no-data">No data available</div>' : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Add disclaimer headline
+            const disclaimerHtml = '<div class="disclaimer-headline">Pooled profit automation is for private NKO use only and does not provide any form of investment advice or recommendations. All data is prohibited from reuse and is for AI training purposes only.</div>';
+            
+            // Calculate and display PPA (Pooled Profit Automation) as second grid item
+            const ppaData = calculatePPA();
+            const ppaFormatted = formatPPA(ppaData);
+            
+            let ppaHtml = '';
+            if (ppaFormatted) {
+                let ppaClass = 'ppa-display';
+                if (ppaFormatted.isPositive) {
+                    ppaClass += ' positive';
+                } else if (ppaFormatted.isNegative) {
+                    ppaClass += ' negative';
+                } else {
+                    ppaClass += ' neutral';
+                }
+                
+                ppaHtml = `<div class="${ppaClass}">${ppaFormatted.html}</div>`;
+                logger.log('✅ PPA Display Updated:', ppaFormatted.html);
+            } else {
+                // Show loading skeleton if no data available
+                ppaHtml = '<div class="ppa-display"><div class="ppa-loading-skeleton"></div></div>';
+            }
+            
+            // Prepend disclaimer and PPA to the beginning of the grid content
+            // Create DOM elements safely instead of using innerHTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = disclaimerHtml + ppaHtml + htmlContent;
+            
+            // Clear existing content
+            pricesGrid.innerHTML = '';
+            
+            // Append new content safely
+            while (tempDiv.firstChild) {
+                pricesGrid.appendChild(tempDiv.firstChild);
+            }
+        }
+
+        function connect() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                return;
+            }
+
+            // Set loading state when connecting
+            isLoading = true;
+            updateStatus('connecting');
+            
+            try {
+                ws = new WebSocket('wss://ws.kraken.com');
+                
+                ws.onopen = function() {
+                    updateStatus('connected');
+                    reconnectAttempts = 0;
+                    
+                    // Subscribe to ticker for all pairs
+                    const subscribeMsg = {
+                        event: 'subscribe',
+                        pair: tradingPairs.map(p => p.krakenPair),
+                        subscription: {
+                            name: 'ticker'
+                        }
+                    };
+                    
+                    logger.log('🔌 Subscribing to pairs:', tradingPairs.map(p => p.krakenPair));
+                    logger.log('🔌 Subscription message:', JSON.stringify(subscribeMsg));
+                    ws.send(JSON.stringify(subscribeMsg));
+                };
+                
+                ws.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        logger.log('🔌 WebSocket message received:', data);
+                        
+                        if (Array.isArray(data) && data.length >= 2) {
+                            const pairName = data[3]; // Pair name from ticker
+                            const tickerData = data[1];
+                            logger.log(`📊 Processing data for pair: ${pairName}`, tickerData);
+                            
+                            if (tickerData && tickerData.c && tickerData.c[0]) {
+                                const price = parseFloat(tickerData.c[0]);
+                                const timestamp = new Date().toLocaleTimeString();
+                                
+                                // Debug: Log real-time price updates
+                                logger.log(`🔄 [${timestamp}] WebSocket Update for ${pairName}:`);
+                                logger.log(`  Current Live Price: $${price}`);
+                                
+                                // Check if price actually changed
+                                const previousPrice = prices[pairName] || 0;
+                                if (previousPrice !== 0 && previousPrice !== price) {
+                                    const priceDiff = price - previousPrice;
+                                    logger.log(`  Price Change: $${priceDiff > 0 ? '+' : ''}${priceDiff.toFixed(2)} (${((priceDiff / previousPrice) * 100).toFixed(4)}%)`);
+                                } else if (previousPrice === 0) {
+                                    logger.log(`  Initial Price Set: $${price}`);
+                                }
+                                
+                                // Debug: Log all available ticker data
+                                logger.log('Full ticker data:', tickerData);
+                                logger.log('Price fields:', tickerData.c);
+                                logger.log('24h fields:', tickerData.p);
+                                
+                                // Find the trading pair by Kraken pair name
+                                logger.log(`🔍 Looking for pair: "${pairName}"`);
+                                logger.log(`🔍 Available pairs:`, tradingPairs.map(p => p.krakenPair));
+                                const pair = tradingPairs.find(p => p.krakenPair === pairName);
+                                logger.log(`🔍 Found pair:`, pair);
+                                if (pair) {
+                                    // Store current price
+                                    prices[pair.id] = price;
+                                    logger.log(`💰 Stored price for ${pair.id}: $${price}`);
+                                    
+                                    // Store as last known price for loading states
+                                    lastKnownPrices[pair.id] = price;
+                                    
+                                    // Historical price storage removed - now using real-time 48h data fetching
+                                    
+
+                                    
+                                    // Calculate 24h change from Kraken data
+                                    // Use previous day's closing price for accurate 24h change
+                                    let open24h, change, changePercent;
+                                    
+                                    if (tickerData.o && tickerData.o[1]) {
+                                        // Use previous day's closing price (o[1]) for rolling 24h change
+                                        open24h = parseFloat(tickerData.o[1]);
+                                        change = price - open24h;
+                                        changePercent = (change / open24h) * 100;
+                                        
+                                        // Debug logging for 24h calculations
+                                        logger.log(`24h Calculation for ${pair.id}:`);
+                                        logger.log(`  Current Price: $${price}`);
+                                        logger.log(`  Previous Day Close (o[1]): $${open24h}`);
+                                        logger.log(`  Raw Change: $${change}`);
+                                        logger.log(`  Change Percent: ${changePercent}%`);
+                                        logger.log(`  Kraken tickerData.o:`, tickerData.o);
+                                    }
+                                    
+                                    // Store the 24h change data and ticker data for enhanced analysis
+                                    if (change !== undefined && changePercent !== undefined) {
+                                        // Get previous volume data for comparison
+                                        const previousVolumeData = previousPrices[pair.id]?.volumeData;
+                                        
+                                        // Enhanced volume data logging for XBT/USD
+                                        if (pair.id === 'BTC/USD') {
+                                            logger.log('🔍 FULL KRAKEN VOLUME DATA FOR XBT/USD:');
+                                            logger.log('  📊 Raw Ticker Data:', tickerData);
+                                            logger.log('  🎯 VCI24 DATA SOURCE VERIFICATION:');
+                                            logger.log(`    v[0] Raw Value: "${tickerData.v ? tickerData.v[0] : 'N/A'}"`);
+                                            logger.log(`    v[1] Raw Value: "${tickerData.v ? tickerData.v[1] : 'N/A'}"`);
+                                            logger.log(`    v[0] Parsed: ${tickerData.v ? parseFloat(tickerData.v[0]) : 'N/A'}`);
+                                            logger.log(`    v[1] Parsed: ${tickerData.v ? parseFloat(tickerData.v[1]) : 'N/A'}`);
+                                            logger.log('  📈 Volume Fields:');
+                                            logger.log('    v[0] (Today Volume):', tickerData.v ? tickerData.v[0] : 'N/A');
+                                            logger.log('    v[1] (24h Volume):', tickerData.v ? tickerData.v[1] : 'N/A');
+                                            logger.log('    vw (Volume Weighted Avg):', tickerData.vw ? tickerData.vw[0] : 'N/A');
+                                            logger.log('    t (Trade Count):', tickerData.t ? tickerData.t[0] : 'N/A');
+                                            logger.log('  💰 Price Fields:');
+                                            logger.log('    c[0] (Current Price):', tickerData.c ? tickerData.c[0] : 'N/A');
+                                            logger.log('    o[0] (24h Open):', tickerData.o ? tickerData.o[0] : 'N/A');
+                                            logger.log('    p[0] (24h High):', tickerData.p ? tickerData.p[0] : 'N/A');
+                                            logger.log('    p[1] (24h Low):', tickerData.p ? tickerData.p[1] : 'N/A');
+                                            logger.log('  📊 Market Data:');
+                                            logger.log('    b[0] (Best Bid):', tickerData.b ? tickerData.b[0] : 'N/A');
+                                            logger.log('    a[0] (Best Ask):', tickerData.a ? tickerData.a[0] : 'N/A');
+                                            logger.log('  🔄 Volume Analysis:');
+                                            logger.log('    Current 24h Volume (XBT):', tickerData.v ? parseFloat(tickerData.v[1]).toFixed(8) : 'N/A');
+                                            logger.log('    Volume in USD (est):', tickerData.v && tickerData.c ? (parseFloat(tickerData.v[1]) * parseFloat(tickerData.c[0])).toFixed(2) : 'N/A');
+                                            logger.log('    Previous Volume Data:', previousVolumeData);
+                                            
+                                            // Validate v[0] is from midnight UTC to current time
+                                            const now = new Date();
+                                            const utcHours = now.getUTCHours();
+                                            const utcMinutes = now.getUTCMinutes();
+                                            const hoursSinceMidnight = utcHours + (utcMinutes / 60);
+                                            const currentDayVolume = tickerData.v ? parseFloat(tickerData.v[0]) : 0;
+                                            const previous24hVolume = tickerData.v ? parseFloat(tickerData.v[1]) : 0;
+                                            
+                                            logger.log('  🕐 UTC Time Validation:');
+                                            logger.log(`    Current UTC Time: ${now.toISOString()}`);
+                                            logger.log(`    Hours Since Midnight UTC: ${hoursSinceMidnight.toFixed(2)}`);
+                                            logger.log(`    v[0] (Today's Volume): ${currentDayVolume.toLocaleString()} XBT`);
+                                            logger.log(`    v[1] (24h Rolling Volume): ${previous24hVolume.toLocaleString()} XBT`);
+                                            logger.log(`    ✅ v[0] represents volume from 00:00 UTC to ${utcHours.toString().padStart(2, '0')}:${utcMinutes.toString().padStart(2, '0')} UTC`);
+                                            
+                                            // Calculate hourly rate for validation with partial hour precision
+                                            if (hoursSinceMidnight > 0) {
+                                                const fullHoursElapsed = Math.floor(hoursSinceMidnight);
+                                                const partialHourProgress = hoursSinceMidnight - fullHoursElapsed;
+                                                const hourlyRate = currentDayVolume / hoursSinceMidnight;
+                                                
+                                                logger.log(`    📊 Current Hourly Volume Rate: ${hourlyRate.toLocaleString()} XBT/hour`);
+                                                logger.log(`    📊 Previous 24h Hourly Average: ${(previous24hVolume / 24).toLocaleString()} XBT/hour`);
+                                                logger.log(`    📊 Time Precision: ${fullHoursElapsed} full hours + ${(partialHourProgress * 60).toFixed(0)} minutes`);
+                                                
+                                                // Show the impact of partial hour calculation
+                                                if (partialHourProgress > 0) {
+                                                    const fullHoursOnlyRate = currentDayVolume / Math.max(fullHoursElapsed, 1);
+                                                    logger.log(`    📊 Full Hours Only Rate: ${fullHoursOnlyRate.toLocaleString()} XBT/hour`);
+                                                    logger.log(`    📊 Partial Hour Impact: ${((hourlyRate - fullHoursOnlyRate) / fullHoursOnlyRate * 100).toFixed(1)}% difference`);
+                                                }
+                                            }
+                                        }
+                                        
+                                        // Store the current volume data as the new previous data
+                                        const currentVolume24h = tickerData.v ? parseFloat(tickerData.v[1]) : null;
+                                        
+                                        previousPrices[pair.id] = {
+                                            change: change,
+                                            changePercent: changePercent,
+                                            historicalPrice: open24h,
+                                            tickerData: tickerData, // Store full ticker data for TVI analysis
+                                            volumeData: {
+                                                volume24h: currentVolume24h,
+                                                previousVolume24h: previousVolumeData?.volume24h || null,
+                                                timestamp: Date.now()
+                                            }
+                                        };
+                                    }
+                                    
+                                    // Update loading state when we get first data
+                                    if (isLoading) {
+                                        isLoading = false;
+                                    }
+                                    
+                                    // Log that we're about to re-render with new data
+                                    logger.log(`📊 [${timestamp}] Re-rendering prices for ${pair.id} with live price $${price}`);
+                                    
+                                    // Throttle rendering to prevent excessive updates
+                                    if (!renderThrottleTimeout) {
+                                        renderThrottleTimeout = setTimeout(() => {
+                                            renderPrices().catch(logger.error);
+                                    updateLastUpdated();
+                                            renderThrottleTimeout = null;
+                                        }, 500); // Throttle to max 2 renders per second
+                                    }
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        logger.error('Error parsing message:', error);
+                        updateStatus('error');
+                    }
+                };
+                
+                ws.onclose = function() {
+                    updateStatus('disconnected');
+                    // Keep loading state true if we have no data, false if we have some data
+                    if (Object.keys(prices).length === 0) {
+                        isLoading = true;
+                    }
+                    scheduleReconnect();
+                };
+                
+                ws.onerror = function(error) {
+                    logger.error('WebSocket error:', error);
+                    updateStatus('error');
+                    // Keep loading state true if we have no data, false if we have some data
+                    if (Object.keys(prices).length === 0) {
+                        isLoading = true;
+                    }
+                };
+                
+            } catch (error) {
+                logger.error('Connection error:', error);
+                updateStatus('error');
+                scheduleReconnect();
+            }
+        }
+
+        function scheduleReconnect() {
+            if (reconnectAttempts >= maxReconnectAttempts) {
+                logger.log('Max reconnection attempts reached');
+                updateStatus('error');
+                return;
+            }
+            
+            reconnectAttempts++;
+            const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+            
+            reconnectTimeout = setTimeout(() => {
+                logger.log(`Reconnecting... Attempt ${reconnectAttempts}`);
+                connect();
+            }, delay);
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+            
+            if (reconnectTimeout) {
+                clearTimeout(reconnectTimeout);
+                reconnectTimeout = null;
+            }
+            
+            updateStatus('disconnected');
+        }
+
+        // Fireworks particle system
+        class FireworkParticle {
+            constructor(x, y, direction, velocity, radius, color) {
+                this.x = x;
+                this.y = y;
+                this.direction = direction;
+                this.velocity = velocity;
+                this.radius = radius;
+                this.color = color;
+                this.alpha = 1;
+                this.decay = 0.98;
+                this.gravity = 0.1;
+                this.vx = Math.cos(direction) * velocity;
+                this.vy = Math.sin(direction) * velocity;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += this.gravity;
+                this.vx *= this.decay;
+                this.vy *= this.decay;
+                this.radius *= 0.99;
+                this.alpha *= 0.99;
+            }
+
+            draw(ctx) {
+                // Skip drawing if particle is too small or transparent
+                if (this.alpha < 0.01 || this.radius < 0.1) return;
+                
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Fireworks system
+        class FireworksSystem {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.particles = [];
+                this.isActive = false;
+                this.hue = 0;
+                this.animationRunning = false;
+                
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+            }
+
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+
+            createExplosion(x, y, color) {
+                const particleCount = 24;
+                for (let i = 0; i < particleCount; i++) {
+                    const angle = (Math.PI * 2 * i) / particleCount;
+                    const velocity = Math.random() * 3 + 2;
+                    const radius = Math.random() * 3 + 1;
+                    const particle = new FireworkParticle(
+                        x, y, angle, velocity, radius, color
+                    );
+                    this.particles.push(particle);
+                }
+            }
+
+            triggerFireworks(x, y) {
+                this.isActive = true;
+                this.hue = (this.hue + 30) % 360;
+                const color = `hsl(${this.hue}, 80%, 60%)`;
+                this.createExplosion(x, y, color);
+                
+                // Restart animation if it's not running
+                if (!this.animationRunning) {
+                    this.start();
+                }
+                
+                // Auto-deactivate after animation
+                setTimeout(() => {
+                    this.isActive = false;
+                }, 2000);
+            }
+
+            update() {
+                if (!this.isActive && this.particles.length === 0) return;
+
+                // Only clear canvas if we have particles to render
+                if (this.particles.length > 0) {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                }
+
+                this.particles = this.particles.filter(particle => {
+                    particle.update();
+                    particle.draw(this.ctx);
+                    return particle.alpha > 0.01 && particle.radius > 0.1;
+                });
+            }
+
+            start() {
+                if (this.animationRunning) return; // Prevent multiple animation loops
+                
+                this.animationRunning = true;
+                const animate = () => {
+                    this.update();
+                    // Only continue animation if we have active particles or fireworks
+                    if (this.isActive || this.particles.length > 0) {
+                    requestAnimationFrame(animate);
+                    } else {
+                        this.animationRunning = false; // Stop animation when no particles
+                    }
+                };
+                animate();
+            }
+        }
+
+        // Initialize
+        async function init() {
+            logger.log('🚀 Starting initialization...');
+            logger.log('🚀 Initial APEE_INVESTMENT_AMOUNT:', APEE_INVESTMENT_AMOUNT);
+            initializeLoadingState(); // Show skeleton placeholders first
+            updateLastUpdated();
+            
+            // Load Pi Cycle data from JSON file
+            logger.log('📊 Loading Pi Cycle Top Indicator data...');
+            await loadPiCycleData();
+            
+            // Fetch APEE configuration from Netlify function
+            logger.log('🔧 About to fetch APEE configuration...');
+            await fetchAPEEConfiguration();
+            logger.log('✅ APEE configuration fetch completed. Current value:', APEE_INVESTMENT_AMOUNT);
+            
+            connect();
+            
+            // Initialize fireworks system
+            const fireworks = new FireworksSystem(document.getElementById('fireworksCanvas'));
+            fireworks.start();
+            
+            // Add hover event to status indicator
+            const statusIndicator = document.querySelector('.status-indicator');
+            statusIndicator.addEventListener('mouseenter', (e) => {
+                const rect = statusIndicator.getBoundingClientRect();
+                const x = rect.left + rect.width / 2;
+                const y = rect.top + rect.height / 2;
+                fireworks.triggerFireworks(x, y);
+            });
+            
+            // Add hover event to logo
+            const logo = document.querySelector('.logo');
+            logo.addEventListener('mouseenter', (e) => {
+                const rect = logo.getBoundingClientRect();
+                const x = rect.left + rect.width / 2;
+                const y = rect.top + rect.height / 2;
+                fireworks.triggerFireworks(x, y);
+            });
+            
+            // Update timestamp every second
+            setInterval(updateLastUpdated, 1000);
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', disconnect);
+
+
+        // List available OpenAI models
+        async function listOpenAIModels() {
+            logger.log('🔍 Listing available OpenAI models...');
+            
+            const openaiApiKey = window.VITE_OPENAI_API_KEY;
+            if (!openaiApiKey) {
+                logger.error('❌ No OpenAI API key found');
+                return false;
+            }
+            
+            logger.log('🔑 OpenAI API key found:', openaiApiKey.substring(0, 4) + '...' + openaiApiKey.substring(openaiApiKey.length - 4));
+            
+            try {
+                const response = await fetch('https://api.openai.com/v1/models', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${openaiApiKey}`
+                    }
+                });
+                
+                logger.log('📡 OpenAI Models API response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    logger.error('❌ OpenAI Models API error:', response.status, errorText);
+                    return false;
+                }
+                
+                const data = await response.json();
+                logger.log('✅ OpenAI Models API successful!');
+                logger.log('📥 Total models available:', data.data.length);
+                
+                // Filter and display chat completion models
+                const chatModels = data.data.filter(model => 
+                    model.id.includes('gpt') || 
+                    model.id.includes('o1') ||
+                    model.id.includes('claude')
+                );
+                
+                logger.log('🤖 Available Chat Completion Models:');
+                chatModels.forEach(model => {
+                    logger.log(`  - ${model.id} (${model.owned_by})`);
+                });
+                
+                // Show recommended models for our use case
+                const recommendedModels = chatModels.filter(model => 
+                    model.id.includes('gpt-4') || 
+                    model.id.includes('gpt-3.5') ||
+                    model.id.includes('o1')
+                );
+                
+                logger.log('⭐ Recommended Models for Investment Analysis:');
+                recommendedModels.forEach(model => {
+                    logger.log(`  - ${model.id} (${model.owned_by})`);
+                });
+                
+                return true;
+            } catch (error) {
+                logger.error('❌ OpenAI Models API failed:', error);
+                return false;
+            }
+        }
+
+
+
+        // Start the application
+        init().catch(logger.error);
+
     </script>
-  </body>
+</body>
 </html>
