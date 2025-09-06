@@ -895,6 +895,7 @@
         let pongTimeout = null;
         let lastPingTime = 0;
         let lastPongTime = 0;
+        let lastConnectionTime = 0;
 
         // Price data storage
         const prices = {};
@@ -2553,23 +2554,23 @@ Respond with just the number (e.g., "75").`;
                 clearTimeout(pongTimeout);
             }
             
-            // Send ping every 30 seconds
+            // Send ping every 60 seconds (conservative approach per Kraken guidelines)
             pingInterval = setInterval(() => {
                 if (ws && ws.readyState === WebSocket.OPEN) {
                     lastPingTime = Date.now();
                     ws.send(JSON.stringify({ event: 'ping' }));
-                    logger.log('🏓 Ping sent');
+                    logger.log('🏓 Ping sent (60s interval)');
                     
-                    // Set timeout for pong response (10 seconds)
+                    // Set timeout for pong response (15 seconds - more generous)
                     pongTimeout = setTimeout(() => {
                         logger.error('🏓 Pong timeout - connection may be stale');
                         // Force reconnection if no pong received
                         if (ws) {
                             ws.close();
                         }
-                    }, 10000);
+                    }, 15000);
                 }
-            }, 30000);
+            }, 60000);
         }
         
         function stopPingPong() {
@@ -2588,6 +2589,17 @@ Respond with just the number (e.g., "75").`;
                 return;
             }
 
+            // Kraken API compliance: Ensure max 1 connection per second
+            const now = Date.now();
+            const timeSinceLastConnection = now - lastConnectionTime;
+            if (timeSinceLastConnection < 1000) {
+                const waitTime = 1000 - timeSinceLastConnection;
+                logger.log(`🔄 Kraken API compliance: Waiting ${waitTime}ms before reconnecting`);
+                setTimeout(connect, waitTime);
+                return;
+            }
+            lastConnectionTime = now;
+
             // Set loading state when connecting
             isLoading = true;
             updateStatus('connecting');
@@ -2600,6 +2612,7 @@ Respond with just the number (e.g., "75").`;
                     reconnectAttempts = 0;
                     
                     // Subscribe to ticker for all pairs
+                    // Kraken API compliance: 12 subscriptions (well under 100 limit)
                     const subscribeMsg = {
                         event: 'subscribe',
                         pair: tradingPairs.map(p => p.krakenPair),
@@ -2609,6 +2622,7 @@ Respond with just the number (e.g., "75").`;
                     };
                     
                     logger.log('🔌 Subscribing to pairs:', tradingPairs.map(p => p.krakenPair));
+                    logger.log(`🔌 Kraken API compliance: ${tradingPairs.length} subscriptions (limit: 100)`);
                     logger.log('🔌 Subscription message:', JSON.stringify(subscribeMsg));
                     ws.send(JSON.stringify(subscribeMsg));
                     
@@ -2782,6 +2796,7 @@ Respond with just the number (e.g., "75").`;
                                     logger.log(`📊 [${timestamp}] Re-rendering prices for ${pair.id} with live price $${price}`);
                                     
                                     // Throttle rendering to prevent excessive updates
+                                    // Kraken API compliance: Throttle UI updates to reduce processing load
                                     if (!renderThrottleTimeout) {
                                         renderThrottleTimeout = setTimeout(() => {
                                             renderPrices().catch(logger.error);
