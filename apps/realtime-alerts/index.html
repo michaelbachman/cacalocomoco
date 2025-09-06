@@ -3248,9 +3248,9 @@ Respond with just the number (e.g., "75").`;
                     } : null
                 },
                 
-                // AI confidence (placeholder for now)
-                gemini_confidence: null,
-                openai_confidence: null,
+                // AI confidence (placeholder for now) - must be integer for existing table
+                gemini_confidence: 0,
+                openai_confidence: 0,
                 
                 // Metadata
                 data_source: 'kraken',
@@ -3304,6 +3304,7 @@ Respond with just the number (e.g., "75").`;
                 }
 
                 // Now store the snapshots
+                logger.log('📸 Sending snapshots to database:', snapshots);
                 const response = await fetch('/.netlify/functions/database', {
                     method: 'POST',
                     headers: {
