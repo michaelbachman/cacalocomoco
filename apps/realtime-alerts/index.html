@@ -891,6 +891,10 @@
         const maxReconnectAttempts = 5;
         let reconnectTimeout = null;
         let renderThrottleTimeout = null;
+        let pingInterval = null;
+        let pongTimeout = null;
+        let lastPingTime = 0;
+        let lastPongTime = 0;
 
         // Price data storage
         const prices = {};
@@ -2539,6 +2543,46 @@ Respond with just the number (e.g., "75").`;
             }
         }
 
+        // Ping/pong mechanism for WebSocket health
+        function startPingPong() {
+            // Clear any existing intervals
+            if (pingInterval) {
+                clearInterval(pingInterval);
+            }
+            if (pongTimeout) {
+                clearTimeout(pongTimeout);
+            }
+            
+            // Send ping every 30 seconds
+            pingInterval = setInterval(() => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    lastPingTime = Date.now();
+                    ws.send(JSON.stringify({ event: 'ping' }));
+                    logger.log('🏓 Ping sent');
+                    
+                    // Set timeout for pong response (10 seconds)
+                    pongTimeout = setTimeout(() => {
+                        logger.error('🏓 Pong timeout - connection may be stale');
+                        // Force reconnection if no pong received
+                        if (ws) {
+                            ws.close();
+                        }
+                    }, 10000);
+                }
+            }, 30000);
+        }
+        
+        function stopPingPong() {
+            if (pingInterval) {
+                clearInterval(pingInterval);
+                pingInterval = null;
+            }
+            if (pongTimeout) {
+                clearTimeout(pongTimeout);
+                pongTimeout = null;
+            }
+        }
+
         function connect() {
             if (ws && ws.readyState === WebSocket.OPEN) {
                 return;
@@ -2567,12 +2611,22 @@ Respond with just the number (e.g., "75").`;
                     logger.log('🔌 Subscribing to pairs:', tradingPairs.map(p => p.krakenPair));
                     logger.log('🔌 Subscription message:', JSON.stringify(subscribeMsg));
                     ws.send(JSON.stringify(subscribeMsg));
+                    
+                    // Start ping/pong mechanism for connection health
+                    startPingPong();
                 };
                 
                 ws.onmessage = function(event) {
                     try {
                         const data = JSON.parse(event.data);
                         logger.log('🔌 WebSocket message received:', data);
+                        
+                        // Handle pong response
+                        if (data.event === 'pong') {
+                            lastPongTime = Date.now();
+                            logger.log('🏓 Pong received, connection healthy');
+                            return;
+                        }
                         
                         if (Array.isArray(data) && data.length >= 2) {
                             const pairName = data[3]; // Pair name from ticker
@@ -2745,6 +2799,7 @@ Respond with just the number (e.g., "75").`;
                 };
                 
                 ws.onclose = function() {
+                    stopPingPong();
                     updateStatus('disconnected');
                     // Keep loading state true if we have no data, false if we have some data
                     if (Object.keys(prices).length === 0) {
@@ -2786,6 +2841,9 @@ Respond with just the number (e.g., "75").`;
         }
 
         function disconnect() {
+            // Stop ping/pong mechanism
+            stopPingPong();
+            
             if (ws) {
                 ws.close();
                 ws = null;
@@ -2962,6 +3020,14 @@ Respond with just the number (e.g., "75").`;
             
             // Update timestamp every second
             setInterval(updateLastUpdated, 1000);
+            
+            // Force data refresh every 5 seconds to ensure UI stays current
+            setInterval(() => {
+                if (Object.keys(prices).length > 0) {
+                    logger.log('🔄 Force refresh: Re-rendering prices to ensure UI is current');
+                    renderPrices().catch(logger.error);
+                }
+            }, 5000);
         }
 
         // Cleanup on page unload
