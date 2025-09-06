@@ -7,8 +7,16 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <!-- Restrictive CSP for security -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.kraken.com wss://ws.kraken.com; img-src 'self' data:; object-src 'none'; base-uri 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.kraken.com wss://ws.kraken.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'self'; upgrade-insecure-requests; block-all-mixed-content;">
     <meta http-equiv="Expires" content="0">
+    
+    <!-- Additional Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), interest-cohort=()">
+    <meta name="robots" content="noindex, nofollow, nosnippet, noarchive">
             <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link rel="preload" href="https://fonts.googleapis.com/css2?family=Creepster&family=Noto+Sans+Mono:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
@@ -29,6 +37,25 @@
             -moz-osx-font-smoothing: grayscale;
             font-smooth: always;
             text-rendering: optimizeLegibility;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        
+        /* Anti-inspection CSS */
+        * {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        /* Hide elements from common selectors */
+        [data-debug], [data-test], [data-cy], [data-testid] {
+            display: none !important;
         }
 
         .container {
@@ -646,6 +673,99 @@
     <script type="module">
         // Import API configuration and logger
         import './src/config.js';
+        
+        // Anti-Tracking and Extension Blocking
+        (function() {
+            'use strict';
+            
+            // Block common tracking methods
+            const originalFetch = window.fetch;
+            const originalXHR = window.XMLHttpRequest;
+            
+            // Override fetch to block external tracking
+            window.fetch = function(...args) {
+                const url = args[0];
+                if (typeof url === 'string' && !url.startsWith(window.location.origin) && 
+                    !url.includes('api.kraken.com') && !url.includes('fonts.googleapis.com')) {
+                    console.warn('Blocked external fetch request:', url);
+                    return Promise.reject(new Error('External request blocked'));
+                }
+                return originalFetch.apply(this, args);
+            };
+            
+            // Override XMLHttpRequest to block external tracking
+            const originalOpen = XMLHttpRequest.prototype.open;
+            XMLHttpRequest.prototype.open = function(method, url, ...args) {
+                if (typeof url === 'string' && !url.startsWith(window.location.origin) && 
+                    !url.includes('api.kraken.com') && !url.includes('fonts.googleapis.com')) {
+                    console.warn('Blocked external XHR request:', url);
+                    throw new Error('External request blocked');
+                }
+                return originalOpen.apply(this, [method, url, ...args]);
+            };
+            
+            // Block common tracking objects
+            Object.defineProperty(window, 'ga', {
+                get: () => undefined,
+                set: () => {},
+                configurable: false
+            });
+            
+            Object.defineProperty(window, 'gtag', {
+                get: () => undefined,
+                set: () => {},
+                configurable: false
+            });
+            
+            Object.defineProperty(window, 'fbq', {
+                get: () => undefined,
+                set: () => {},
+                configurable: false
+            });
+            
+            // Block extension injection attempts
+            const originalAppendChild = Node.prototype.appendChild;
+            Node.prototype.appendChild = function(child) {
+                if (child.tagName === 'SCRIPT' && child.src && 
+                    !child.src.startsWith(window.location.origin) && 
+                    !child.src.includes('fonts.googleapis.com')) {
+                    console.warn('Blocked external script injection:', child.src);
+                    return child;
+                }
+                return originalAppendChild.call(this, child);
+            };
+            
+            // Disable right-click context menu
+            document.addEventListener('contextmenu', e => e.preventDefault());
+            
+            // Disable common developer tools shortcuts
+            document.addEventListener('keydown', e => {
+                // F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+                if (e.key === 'F12' || 
+                    (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
+                    (e.ctrlKey && e.key === 'u')) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+            
+            // Detect and warn about developer tools
+            let devtools = false;
+            const threshold = 160;
+            setInterval(() => {
+                if (window.outerHeight - window.innerHeight > threshold || 
+                    window.outerWidth - window.innerWidth > threshold) {
+                    if (!devtools) {
+                        devtools = true;
+                        console.warn('Developer tools detected. Some features may be disabled.');
+                    }
+                } else {
+                    devtools = false;
+                }
+            }, 500);
+            
+            console.log('🛡️ Anti-tracking protection activated');
+        })();
         
         
         
