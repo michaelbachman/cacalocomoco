@@ -3282,6 +3282,28 @@ Respond with just the number (e.g., "75").`;
 
         async function storeSnapshots(snapshots) {
             try {
+                // First, ensure the table exists
+                const createTableResponse = await fetch('/.netlify/functions/database', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'createHourlySnapshotsTable',
+                        data: {}
+                    })
+                });
+
+                if (!createTableResponse.ok) {
+                    logger.warn('Table creation check failed, proceeding anyway...');
+                } else {
+                    const createResult = await createTableResponse.json();
+                    if (createResult.success) {
+                        logger.log('📊 Database table ready:', createResult.message);
+                    }
+                }
+
+                // Now store the snapshots
                 const response = await fetch('/.netlify/functions/database', {
                     method: 'POST',
                     headers: {
