@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Cryptocurrency Prices - Kraken</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <!-- Restrictive CSP for security -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.kraken.com wss://ws.kraken.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'self'; upgrade-insecure-requests; block-all-mixed-content;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.kraken.com wss://ws.kraken.com https://*.netlify.app https://*.netlify.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; form-action 'self'; upgrade-insecure-requests; block-all-mixed-content;">
     <meta http-equiv="Expires" content="0">
     
     <!-- Additional Security Headers -->
@@ -18,7 +18,7 @@
     <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), interest-cohort=()">
     <meta name="robots" content="noindex, nofollow, nosnippet, noarchive">
             <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link rel="preload" href="https://fonts.googleapis.com/css2?family=Creepster&family=Noto+Sans+Mono:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
         <noscript><link href="https://fonts.googleapis.com/css2?family=Creepster&family=Noto+Sans+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
     <style>
@@ -644,8 +644,8 @@
             }
         }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <!-- Logo -->
     <div class="logo">NKO</div>
 
@@ -686,7 +686,11 @@
             window.fetch = function(...args) {
                 const url = args[0];
                 if (typeof url === 'string' && !url.startsWith(window.location.origin) && 
-                    !url.includes('api.kraken.com') && !url.includes('fonts.googleapis.com')) {
+                    !url.includes('api.kraken.com') && 
+                    !url.includes('fonts.googleapis.com') &&
+                    !url.includes('fonts.gstatic.com') &&
+                    !url.includes('netlify.app') &&
+                    !url.includes('netlify.com')) {
                     console.warn('Blocked external fetch request:', url);
                     return Promise.reject(new Error('External request blocked'));
                 }
@@ -697,7 +701,11 @@
             const originalOpen = XMLHttpRequest.prototype.open;
             XMLHttpRequest.prototype.open = function(method, url, ...args) {
                 if (typeof url === 'string' && !url.startsWith(window.location.origin) && 
-                    !url.includes('api.kraken.com') && !url.includes('fonts.googleapis.com')) {
+                    !url.includes('api.kraken.com') && 
+                    !url.includes('fonts.googleapis.com') &&
+                    !url.includes('fonts.gstatic.com') &&
+                    !url.includes('netlify.app') &&
+                    !url.includes('netlify.com')) {
                     console.warn('Blocked external XHR request:', url);
                     throw new Error('External request blocked');
                 }
@@ -728,7 +736,10 @@
             Node.prototype.appendChild = function(child) {
                 if (child.tagName === 'SCRIPT' && child.src && 
                     !child.src.startsWith(window.location.origin) && 
-                    !child.src.includes('fonts.googleapis.com')) {
+                    !child.src.includes('fonts.googleapis.com') &&
+                    !child.src.includes('fonts.gstatic.com') &&
+                    !child.src.includes('netlify.app') &&
+                    !child.src.includes('netlify.com')) {
                     console.warn('Blocked external script injection:', child.src);
                     return child;
                 }
@@ -3001,5 +3012,5 @@ Respond with just the number (e.g., "75").`;
         init().catch(logger.error);
 
     </script>
-</body>
+  </body>
 </html>
