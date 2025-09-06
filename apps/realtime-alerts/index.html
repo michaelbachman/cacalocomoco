@@ -240,6 +240,98 @@
             pointer-events: none;
         }
 
+        /* Manual Snapshot Button Styles */
+        .manual-snapshot-container {
+            grid-column: 1 / -1; /* Span full width of grid */
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-top: 20px;
+            padding: 0 24px;
+        }
+
+        .manual-snapshot-btn {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            border: 2px solid #444;
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-family: 'Noto Sans Mono', monospace;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            min-width: 160px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .manual-snapshot-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #2d2d2d 0%, #3d3d3d 100%);
+            border-color: #666;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .manual-snapshot-btn:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+        }
+
+        .manual-snapshot-btn:disabled {
+            background: #1a1a1a;
+            border-color: #333;
+            color: #666;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .manual-snapshot-btn.loading {
+            background: linear-gradient(135deg, #2d4a2d 0%, #3d5a3d 100%);
+            border-color: #4a6b4a;
+            color: #90ee90;
+        }
+
+        .manual-snapshot-btn.success {
+            background: linear-gradient(135deg, #2d4a2d 0%, #3d5a3d 100%);
+            border-color: #4a6b4a;
+            color: #90ee90;
+        }
+
+        .snapshot-status {
+            margin-top: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'Noto Sans Mono', monospace;
+            font-size: 12px;
+            font-weight: 500;
+            max-width: 400px;
+            word-wrap: break-word;
+        }
+
+        .snapshot-status.success {
+            background: rgba(45, 74, 45, 0.2);
+            border: 1px solid #4a6b4a;
+            color: #90ee90;
+        }
+
+        .snapshot-status.error {
+            background: rgba(74, 45, 45, 0.2);
+            border: 1px solid #6b4a4a;
+            color: #ee9090;
+        }
+
+        .snapshot-status.info {
+            background: rgba(45, 45, 74, 0.2);
+            border: 1px solid #4a4a6b;
+            color: #9090ee;
+        }
+
         .loading {
             font-family: 'Noto Sans Mono', monospace;
             text-align: center;
@@ -657,6 +749,16 @@
             <!-- Loading skeletons will be inserted here by JavaScript -->
         </div>
 
+        <!-- Manual Snapshot Button -->
+        <div class="manual-snapshot-container">
+            <button id="manualSnapshotBtn" class="manual-snapshot-btn" disabled>
+                <span class="btn-text">Capture Snapshot</span>
+                <span class="btn-loading" style="display: none;">Capturing...</span>
+                <span class="btn-success" style="display: none;">✓ Captured!</span>
+            </button>
+            <div id="snapshotStatus" class="snapshot-status" style="display: none;"></div>
+        </div>
+
         <!-- Update timestamp - docked bottom right -->
         <div class="update-timestamp">
             UPD: <span id="lastUpdated">—</span>
@@ -912,6 +1014,8 @@
         const statusBadge = document.getElementById('statusBadge');
         const lastUpdatedSpan = document.getElementById('lastUpdated');
         const pricesGrid = document.getElementById('pricesGrid');
+        const manualSnapshotBtn = document.getElementById('manualSnapshotBtn');
+        const snapshotStatus = document.getElementById('snapshotStatus');
 
         // Utility functions
         async function fetchAPEEConfiguration() {
@@ -2993,6 +3097,275 @@ Respond with just the number (e.g., "75").`;
             }
         }
 
+        // Manual Snapshot Functionality
+        let snapshotCooldown = false;
+        let lastSnapshotTime = 0;
+        const SNAPSHOT_COOLDOWN_MS = 10000; // 10 seconds cooldown
+
+        async function captureManualSnapshot() {
+            // Check cooldown
+            const now = Date.now();
+            if (snapshotCooldown || (now - lastSnapshotTime) < SNAPSHOT_COOLDOWN_MS) {
+                const remainingTime = Math.ceil((SNAPSHOT_COOLDOWN_MS - (now - lastSnapshotTime)) / 1000);
+                showSnapshotStatus(`Please wait ${remainingTime} seconds before capturing another snapshot`, 'info');
+                return;
+            }
+
+            // Check if we have data
+            if (Object.keys(prices).length === 0) {
+                showSnapshotStatus('No price data available. Please wait for data to load.', 'error');
+                return;
+            }
+
+            try {
+                // Set loading state
+                setSnapshotButtonState('loading');
+                snapshotCooldown = true;
+                lastSnapshotTime = now;
+
+                logger.log('📸 Starting manual snapshot capture...');
+
+                // Collect current data for all pairs
+                const snapshots = [];
+                const errors = [];
+
+                for (const pair of tradingPairs) {
+                    try {
+                        const snapshot = await createSnapshotForPair(pair);
+                        if (snapshot) {
+                            snapshots.push(snapshot);
+                            logger.log(`✅ Snapshot created for ${pair.id}`);
+                        } else {
+                            errors.push(`Failed to create snapshot for ${pair.id}`);
+                        }
+                    } catch (error) {
+                        errors.push(`${pair.id}: ${error.message}`);
+                        logger.error(`❌ Snapshot error for ${pair.id}:`, error);
+                    }
+                }
+
+                if (snapshots.length === 0) {
+                    throw new Error('No snapshots could be created');
+                }
+
+                // Send to database
+                const result = await storeSnapshots(snapshots);
+                
+                if (result.success) {
+                    showSnapshotStatus(
+                        `✅ Snapshot captured successfully! ${snapshots.length} pairs saved to database.${errors.length > 0 ? ` (${errors.length} errors)` : ''}`,
+                        'success'
+                    );
+                    logger.log(`📸 Manual snapshot completed: ${snapshots.length} pairs stored`);
+                } else {
+                    throw new Error(result.error || 'Database storage failed');
+                }
+
+            } catch (error) {
+                logger.error('❌ Manual snapshot failed:', error);
+                showSnapshotStatus(`❌ Snapshot failed: ${error.message}`, 'error');
+            } finally {
+                // Reset button state after delay
+                setTimeout(() => {
+                    setSnapshotButtonState('normal');
+                    snapshotCooldown = false;
+                }, 2000);
+            }
+        }
+
+        async function createSnapshotForPair(pair) {
+            const price = prices[pair.id];
+            const priceChange = previousPrices[pair.id];
+            
+            if (!price) {
+                return null;
+            }
+
+            // Get current timestamp
+            const timestamp = new Date().toISOString();
+
+            // Calculate indicators (simplified versions)
+            const indicators = {};
+            
+            // TVI calculation
+            if (priceChange && priceChange.historicalPrice) {
+                indicators.tvi = calculateTVI(pair.id, price, priceChange.historicalPrice, priceChange.tickerData);
+            }
+
+            // BSI calculation
+            if (priceChange && priceChange.historicalPrice) {
+                indicators.bsi = calculateBSI(pair.id, price, priceChange.historicalPrice, priceChange.tickerData, indicators.tvi?.components?.volumeStrength);
+            }
+
+            // APEE calculation
+            if (priceChange && priceChange.historicalPrice) {
+                indicators.apee = calculateAPEE(pair.id, price, priceChange.historicalPrice);
+            }
+
+            // VCI24 calculation
+            if (priceChange && priceChange.tickerData) {
+                indicators.vci24 = calculateVCI24(pair.id, priceChange.tickerData);
+            }
+
+            // Create snapshot object
+            const snapshot = {
+                timestamp: timestamp,
+                pair_name: pair.id,
+                price: parseFloat(price),
+                volume_24h: priceChange?.tickerData?.v ? parseFloat(priceChange.tickerData.v[1]) : null,
+                price_change_24h: priceChange?.priceChange || null,
+                price_change_percent_24h: priceChange?.priceChangePercent || null,
+                
+                // Technical indicators as JSONB
+                indicators_data: {
+                    tvi: indicators.tvi ? {
+                        score: indicators.tvi.value,
+                        direction: indicators.tvi.isIncreasing ? 'increasing' : 'decreasing',
+                        price_change_percent: indicators.tvi.priceChangePercent,
+                        components: indicators.tvi.components,
+                        timestamp: timestamp
+                    } : null,
+                    
+                    bsi: indicators.bsi ? {
+                        score: indicators.bsi.value,
+                        recommendation: indicators.bsi.recommendation,
+                        is_buy: indicators.bsi.isBuy,
+                        timestamp: timestamp
+                    } : null,
+                    
+                    apee: indicators.apee ? {
+                        profit_24h: indicators.apee.profitLoss,
+                        return_percent: indicators.apee.apeeReturnPercent,
+                        timeframe: indicators.apee.timeframe,
+                        timestamp: timestamp
+                    } : null,
+                    
+                    vci24: indicators.vci24 ? {
+                        volume_change: indicators.vci24.volumeChange,
+                        volume_change_percent: indicators.vci24.volumeChangePercent,
+                        volume_change_usd: indicators.vci24.volumeChangeUSD,
+                        timestamp: timestamp
+                    } : null
+                },
+                
+                // AI confidence (placeholder for now)
+                gemini_confidence: null,
+                openai_confidence: null,
+                
+                // Metadata
+                data_source: 'kraken',
+                collection_method: 'manual',
+                data_quality_score: calculateDataQuality(indicators),
+                missing_indicators: getMissingIndicators(indicators)
+            };
+
+            return snapshot;
+        }
+
+        function calculateDataQuality(indicators) {
+            let score = 1.0;
+            if (!indicators.tvi) score -= 0.2;
+            if (!indicators.bsi) score -= 0.2;
+            if (!indicators.apee) score -= 0.2;
+            if (!indicators.vci24) score -= 0.2;
+            return Math.max(0, score);
+        }
+
+        function getMissingIndicators(indicators) {
+            const missing = [];
+            if (!indicators.tvi) missing.push('tvi');
+            if (!indicators.bsi) missing.push('bsi');
+            if (!indicators.apee) missing.push('apee');
+            if (!indicators.vci24) missing.push('vci24');
+            return missing;
+        }
+
+        async function storeSnapshots(snapshots) {
+            try {
+                const response = await fetch('/.netlify/functions/database', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'storeHourlySnapshots',
+                        data: { snapshots }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Database error: ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                logger.error('Database storage error:', error);
+                throw error;
+            }
+        }
+
+        function setSnapshotButtonState(state) {
+            const btn = manualSnapshotBtn;
+            const btnText = btn.querySelector('.btn-text');
+            const btnLoading = btn.querySelector('.btn-loading');
+            const btnSuccess = btn.querySelector('.btn-success');
+
+            // Reset all states
+            btn.classList.remove('loading', 'success');
+            btnText.style.display = 'inline';
+            btnLoading.style.display = 'none';
+            btnSuccess.style.display = 'none';
+
+            switch (state) {
+                case 'loading':
+                    btn.disabled = true;
+                    btn.classList.add('loading');
+                    btnText.style.display = 'none';
+                    btnLoading.style.display = 'inline';
+                    break;
+                case 'success':
+                    btn.disabled = true;
+                    btn.classList.add('success');
+                    btnText.style.display = 'none';
+                    btnSuccess.style.display = 'inline';
+                    break;
+                case 'normal':
+                default:
+                    btn.disabled = false;
+                    break;
+            }
+        }
+
+        function showSnapshotStatus(message, type) {
+            snapshotStatus.textContent = message;
+            snapshotStatus.className = `snapshot-status ${type}`;
+            snapshotStatus.style.display = 'block';
+
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                snapshotStatus.style.display = 'none';
+            }, 5000);
+        }
+
+        function initializeManualSnapshotButton() {
+            // Add event listener
+            manualSnapshotBtn.addEventListener('click', captureManualSnapshot);
+            
+            // Enable button when data is available
+            const checkDataAvailability = () => {
+                if (Object.keys(prices).length > 0) {
+                    manualSnapshotBtn.disabled = false;
+                    logger.log('📸 Manual snapshot button enabled - data available');
+                } else {
+                    manualSnapshotBtn.disabled = true;
+                }
+            };
+
+            // Check initially and then every 2 seconds
+            checkDataAvailability();
+            setInterval(checkDataAvailability, 2000);
+        }
+
         // Initialize
         async function init() {
             logger.log('🚀 Starting initialization...');
@@ -3043,6 +3416,9 @@ Respond with just the number (e.g., "75").`;
                     renderPrices().catch(logger.error);
                 }
             }, 5000);
+
+            // Initialize manual snapshot button
+            initializeManualSnapshotButton();
         }
 
         // Cleanup on page unload
