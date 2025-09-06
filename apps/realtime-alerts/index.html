@@ -11,7 +11,7 @@
     <meta http-equiv="Expires" content="0">
             <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Noto+Sans+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+        <link rel="preload" href="https://fonts.googleapis.com/css2?family=Creepster&family=Noto+Sans+Mono:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
         <noscript><link href="https://fonts.googleapis.com/css2?family=Creepster&family=Noto+Sans+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
     <style>
         * {
@@ -41,7 +41,7 @@
             position: fixed;
             top: 20px;
             right: 20px;
-            font-family: 'Creepster', cursive;
+            font-family: 'Creepster', 'Brush Script MT', 'Lucida Handwriting', cursive;
             font-size: 2.5rem;
             font-weight: 400;
             color: #ffffff;
@@ -49,6 +49,7 @@
             z-index: 1001;
             user-select: none;
             cursor: pointer;
+            font-display: block;
             transition: all 0.3s ease;
         }
 
